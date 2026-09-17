@@ -1,18 +1,15 @@
 // ==========================================
 // LÓGICA DE PRESUPUESTO E HISTORIAL
 // ==========================================
-async function cargarConceptos(origenId, destinoId) {
-    const idArea = parseInt(document.getElementById(origenId).value);
-    const select = document.getElementById(destinoId);
-    select.innerHTML = '<option value="">Seleccione Concepto...</option>';
-    limpiarInputsPresupuesto();
 
-    if (!idArea) return;
-
-    // Trae los conceptos globales y, si hay un cliente seleccionado,
-    // también los conceptos exclusivos de ese cliente.
+// Lista con buscador + checkboxes para agregar varios conceptos de un jalón
+// (reemplaza el flujo anterior de "un concepto a la vez").
+async function renderizarListaConceptos() {
+    const idArea = parseInt(document.getElementById('selArea').value) || null;
     const idClienteRaw = document.getElementById('selClientePresupuesto').value;
-    let query = clienteSupabase.from('conceptos').select('*').eq('id_area', idArea).order('orden', { ascending: true });
+
+    let query = clienteSupabase.from('conceptos').select('*').order('id_area', { ascending: true }).order('orden', { ascending: true });
+    if (idArea) query = query.eq('id_area', idArea);
 
     if (idClienteRaw) {
         query = query.or(`id_cliente.is.null,id_cliente.eq.${parseInt(idClienteRaw)}`);
@@ -21,75 +18,69 @@ async function cargarConceptos(origenId, destinoId) {
     }
 
     const { data: conceptos, error } = await query;
-    if (error) return;
+    const tbody = document.getElementById('listaConceptosPresupuesto');
+    if (error) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">Error al cargar conceptos.</td></tr>'; return; }
 
-    if (!idClienteRaw) {
-        const opciones = conceptos.map(c => `<option value="${c.id}">${escaparTexto(c.concepto)}</option>`);
-        select.innerHTML += opciones.join('');
+    const texto = document.getElementById('buscarConceptoPresupuesto').value.trim().toLowerCase();
+    const filtrados = texto ? conceptos.filter(c => c.concepto.toLowerCase().includes(texto)) : conceptos;
+
+    if (filtrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">No se encontraron conceptos.</td></tr>';
         return;
     }
 
-    // Con un cliente seleccionado, se agrupa visualmente para distinguir
-    // qué conceptos son exclusivos de él y cuáles vienen del catálogo global.
-    const delCliente = conceptos.filter(c => c.id_cliente);
-    const globales = conceptos.filter(c => !c.id_cliente);
-    let extra = '';
-
-    if (delCliente.length > 0) {
-        const opciones = delCliente.map(c => `<option value="${c.id}">${escaparTexto(c.concepto)}</option>`).join('');
-        extra += `<optgroup label="📌 Exclusivos de este cliente">${opciones}</optgroup>`;
-    }
-    if (globales.length > 0) {
-        const opciones = globales.map(c => `<option value="${c.id}">${escaparTexto(c.concepto)}</option>`).join('');
-        extra += `<optgroup label="🌍 Catálogo Global">${opciones}</optgroup>`;
-    }
-    select.innerHTML += extra;
+    const filas = filtrados.map(c => {
+        const nombreArea = mapaAreas[c.id_area] || '';
+        const etiquetaCliente = c.id_cliente ? ' 📌' : '';
+        return `
+            <tr data-id="${c.id}">
+                <td><input type="checkbox" class="chk-concepto"></td>
+                <td>
+                    <strong class="texto-concepto">${escaparTexto(c.concepto)}</strong>${etiquetaCliente}
+                    <br><span style="font-size:0.8em; color:#888;">${escaparTexto(nombreArea)}</span>
+                </td>
+                <td class="texto-unidad">${escaparTexto(c.unidad)}</td>
+                <td><input type="number" class="input-precio-concepto" value="${c.precio_total}" step="0.1" min="0" style="width:90px"></td>
+                <td><input type="number" class="input-cantidad-concepto" value="1" min="0.1" step="0.1" style="width:70px"></td>
+            </tr>`;
+    });
+    tbody.innerHTML = filas.join('');
 }
 
-async function prepararConcepto() {
-    const idCon = parseInt(document.getElementById('selConcepto').value);
-    if (!idCon) { limpiarInputsPresupuesto(); return; }
+function agregarSeleccionadosAlPresupuesto() {
+    const filas = document.querySelectorAll('#listaConceptosPresupuesto tr[data-id]');
+    let agregados = 0;
 
-    const { data, error } = await clienteSupabase.from('conceptos').select('*').eq('id', idCon).single();
-    if (error || !data) return;
+    filas.forEach(fila => {
+        const chk = fila.querySelector('.chk-concepto');
+        if (!chk.checked) return;
 
-    conceptoTemporal = data;
-    document.getElementById('txtUnidad').value = conceptoTemporal.unidad;
-    document.getElementById('txtPrecio').value = conceptoTemporal.precio_total;
-    document.getElementById('txtCantidad').focus();
-}
+        const concepto = fila.querySelector('.texto-concepto').textContent;
+        const unidad = fila.querySelector('.texto-unidad').textContent;
+        const precioUnitario = parseFloat(fila.querySelector('.input-precio-concepto').value);
+        const cantidad = parseFloat(fila.querySelector('.input-cantidad-concepto').value);
 
-function limpiarInputsPresupuesto() {
-    conceptoTemporal = null;
-    document.getElementById('txtUnidad').value = 'm2';
-    document.getElementById('txtPrecio').value = '';
-    document.getElementById('txtCantidad').value = '';
-}
+        if (isNaN(precioUnitario) || precioUnitario < 0 || isNaN(cantidad) || cantidad <= 0) return;
 
-function agregarAlPresupuesto() {
-    const conceptoSelect = document.getElementById('selConcepto');
-    const textoConcepto = conceptoSelect.options[conceptoSelect.selectedIndex].text;
-    const unidad = document.getElementById('txtUnidad').value;
-    const precioUnitario = parseFloat(document.getElementById('txtPrecio').value);
-    const cantidad = parseFloat(document.getElementById('txtCantidad').value);
-
-    if (!conceptoTemporal || isNaN(cantidad) || isNaN(precioUnitario) || cantidad <= 0) {
-        mostrarToast("Asegúrate de seleccionar un concepto y poner cantidad y precio válidos.", 'error');
-        return;
-    }
-
-    presupuestoActual.push({
-        id: Date.now(),
-        concepto: textoConcepto,
-        unidad: unidad,
-        cantidad: cantidad,
-        precioUnitario: precioUnitario,
-        importe: cantidad * precioUnitario
+        presupuestoActual.push({
+            id: siguienteIdFilaPresupuesto++,
+            concepto,
+            unidad,
+            cantidad,
+            precioUnitario,
+            importe: cantidad * precioUnitario
+        });
+        chk.checked = false;
+        agregados++;
     });
 
-    limpiarInputsPresupuesto();
-    document.getElementById('selConcepto').value = '';
+    if (agregados === 0) {
+        mostrarToast("Marca al menos un concepto con cantidad y precio válidos.", 'error');
+        return;
+    }
+
     actualizarTabla();
+    mostrarToast(`${agregados} concepto(s) agregado(s) al presupuesto.`);
 }
 
 function eliminarFila(id) {

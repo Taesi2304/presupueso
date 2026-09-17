@@ -110,6 +110,15 @@ select {
     box-sizing: border-box;
 }
 
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 3px;
+    cursor: pointer;
+    box-sizing: content-box;
+}
+
 .mostrar-password {
     display: flex;
     flex-direction: row;
@@ -362,6 +371,19 @@ th {
     justify-content: flex-end;
     gap: 10px;
     margin-top: 20px;
+}
+
+/* --- Lista de conceptos con checkboxes en Presupuesto --- */
+.tabla-seleccion-conceptos {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+}
+
+.tabla-seleccion-conceptos thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 
 /* --- Toasts (reemplazan alert()) --- */

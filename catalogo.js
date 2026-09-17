@@ -43,10 +43,7 @@ async function guardarNuevoConcepto(boton) {
 
         document.getElementById('filtroAreaCatalogo').value = idArea;
         await cargarTablaCatalogo();
-
-        if (document.getElementById('selArea').value == idArea) {
-            await cargarConceptos('selArea', 'selConcepto');
-        }
+        await renderizarListaConceptos();
     });
 }
 
@@ -68,9 +65,7 @@ async function moverConcepto(idConcepto, direccion) {
     }
 
     await cargarTablaCatalogo();
-    if (document.getElementById('selArea').value == conceptoActual.id_area) {
-        await cargarConceptos('selArea', 'selConcepto');
-    }
+    await renderizarListaConceptos();
 }
 
 let catalogoCache = [];
@@ -157,6 +152,7 @@ async function compartirConceptoGlobal(idConcepto) {
     if (errorInsert) { mostrarToast("Error al compartir: " + errorInsert.message, 'error'); return; }
     mostrarToast("¡Concepto agregado al catálogo global!");
     await cargarTablaCatalogo();
+    await renderizarListaConceptos();
 }
 
 function abrirEdicionConcepto(id) {
@@ -196,6 +192,7 @@ async function confirmarEdicionConcepto() {
     cerrarModalConcepto();
     mostrarToast("Concepto actualizado con éxito");
     await cargarTablaCatalogo();
+    await renderizarListaConceptos();
 }
 
 async function borrarConcepto(id) {
@@ -204,5 +201,6 @@ async function borrarConcepto(id) {
         await clienteSupabase.from('conceptos').delete().eq('id', id);
         mostrarToast("Concepto borrado");
         await cargarTablaCatalogo();
+        await renderizarListaConceptos();
     }
 }

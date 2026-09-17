@@ -52,7 +52,7 @@
                 <div class="grid-2">
                     <div class="form-group">
                         <label>Seleccionar Cliente:</label>
-                        <select id="selClientePresupuesto" onchange="cargarConceptos('selArea', 'selConcepto')">
+                        <select id="selClientePresupuesto" onchange="renderizarListaConceptos()">
                             <option value="">Cargando clientes...</option>
                         </select>
                     </div>
@@ -64,47 +64,38 @@
                  <br>
                  <br>
                 <div class="seccion-agregar no-print">
-                    <h2>Agregar Trabajo</h2>
+                    <h2>Agregar Trabajos</h2>
                     <div class="grid-2">
                         <div class="form-group">
-                            <label>Área (Oficio):</label>
-                            <select id="selArea" onchange="cargarConceptos('selArea', 'selConcepto')">
-                                <option value="">Seleccione...</option>
+                            <label>Filtrar por Área:</label>
+                            <select id="selArea" onchange="renderizarListaConceptos()">
+                                <option value="">Todas las áreas...</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Concepto:</label>
-                            <select id="selConcepto" onchange="prepararConcepto()">
-                                <option value="">Seleccione Área primero...</option>
-                            </select>
+                            <label>Buscar concepto:</label>
+                            <input type="text" id="buscarConceptoPresupuesto" placeholder="🔎 Buscar concepto..." oninput="renderizarListaConceptos()">
                         </div>
                     </div>
 
-                    <div class="grid-4 espaciado-top">
-                        <div class="form-group">
-                            <label>Unidad:</label>
-                            <select id="txtUnidad">
-                                <option value="m2">m2</option>
-                                <option value="m3">m3</option>
-                                <option value="ml">ml</option>
-                                <option value="pza">pza</option>
-                                <option value="lote">lote</option>
-                                <option value="salida">salida</option>
-                                <option value="jornada">jornada/día</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Precio Unit. ($):</label>
-                            <input type="number" id="txtPrecio" step="0.1">
-                        </div>
-                        <div class="form-group">
-                            <label>Cantidad:</label>
-                            <input type="number" id="txtCantidad" placeholder="0" min="0.1" step="0.1">
-                        </div>
-                        <div class="form-group">
-                            <button class="btn-add" onclick="agregarAlPresupuesto()">Agregar Fila</button>
-                        </div>
+                    <div class="table-container tabla-seleccion-conceptos espaciado-top">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;"></th>
+                                    <th>Concepto</th>
+                                    <th>Unidad</th>
+                                    <th>Precio Unit.</th>
+                                    <th>Cantidad</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaConceptosPresupuesto">
+                                <tr><td colspan="5" style="text-align:center;color:#999;">Cargando conceptos...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
+
+                    <button class="btn-add espaciado-top" onclick="agregarSeleccionadosAlPresupuesto()">➕ Agregar Seleccionados al Presupuesto</button>
                 </div>
                 
                 <div class="table-container">

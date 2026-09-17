@@ -18,6 +18,7 @@ async function inicializarDatos() {
     await cargarClientes();
     await cargarHistorial();
     await cargarTablaCatalogo();
+    await renderizarListaConceptos();
 }
 
 function llenarMenuDesplegable(selectId, items, textoDefault) {

@@ -9,7 +9,7 @@ const clienteSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 // Variables temporales compartidas entre archivos
 let presupuestoActual = [];
-let conceptoTemporal = null;
+let siguienteIdFilaPresupuesto = 1;
 let idConceptoEditando = null;
 let idClienteEditando = null;
 let mapaAreas = {};
