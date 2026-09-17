@@ -420,8 +420,11 @@ th {
 }
 
 .logo-negocio {
+    display: block;
     width: 70px;
+    max-width: 100%;
     height: 70px;
+    flex: 0 0 70px;
     object-fit: contain;
 }
 
@@ -543,6 +546,16 @@ th {
 
     .contenedor-filtro {
         width: 100%;
+    }
+
+    .encabezado-negocio {
+        gap: 10px;
+    }
+
+    .logo-negocio {
+        width: 55px;
+        height: 55px;
+        flex-basis: 55px;
     }
 }
 
