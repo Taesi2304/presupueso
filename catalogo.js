@@ -6,12 +6,12 @@
 function llenarFiltroClienteCatalogo(clientes) {
     const select = document.getElementById('filtroClienteCatalogo');
     const valorActual = select.value;
-    select.innerHTML = '<option value="">Todos (Global + Clientes)</option><option value="global">🌍 Solo Catálogo Global</option>';
-    clientes.forEach(c => select.innerHTML += `<option value="${c.id}">${escaparTexto(c.nombre)}</option>`);
+    const opciones = clientes.map(c => `<option value="${c.id}">${escaparTexto(c.nombre)}</option>`);
+    select.innerHTML = '<option value="">Todos (Global + Clientes)</option><option value="global">🌍 Solo Catálogo Global</option>' + opciones.join('');
     select.value = valorActual;
 }
 
-async function guardarNuevoConcepto() {
+async function guardarNuevoConcepto(boton) {
     const idArea = parseInt(document.getElementById('catArea').value);
     const nombre = document.getElementById('catNombre').value;
     const unidad = document.getElementById('catUnidad').value;
@@ -20,32 +20,34 @@ async function guardarNuevoConcepto() {
     const idCliente = idClienteRaw ? parseInt(idClienteRaw) : null;
 
     if (!idArea || !nombre || isNaN(precio)) {
-        alert("Completa todos los campos para guardar el concepto.");
+        mostrarToast("Completa todos los campos para guardar el concepto.", 'error');
         return;
     }
 
-    const { data: conceptosArea } = await clienteSupabase.from('conceptos').select('orden').eq('id_area', idArea);
-    let maxOrden = 0;
-    if (conceptosArea) {
-        conceptosArea.forEach(c => { if (c.orden > maxOrden) maxOrden = c.orden; });
-    }
+    await conBotonCargando(boton, 'Guardando...', async () => {
+        const { data: conceptosArea } = await clienteSupabase.from('conceptos').select('orden').eq('id_area', idArea);
+        let maxOrden = 0;
+        if (conceptosArea) {
+            conceptosArea.forEach(c => { if (c.orden > maxOrden) maxOrden = c.orden; });
+        }
 
-    const { error } = await clienteSupabase.from('conceptos').insert([
-        { id_area: idArea, concepto: nombre, unidad: unidad, precio_total: precio, orden: maxOrden + 1, id_cliente: idCliente }
-    ]);
+        const { error } = await clienteSupabase.from('conceptos').insert([
+            { id_area: idArea, concepto: nombre, unidad: unidad, precio_total: precio, orden: maxOrden + 1, id_cliente: idCliente }
+        ]);
 
-    if (error) { alert("Error al guardar: " + error.message); return; }
+        if (error) { mostrarToast("Error al guardar: " + error.message, 'error'); return; }
 
-    alert("¡Concepto guardado en la nube con éxito!");
-    document.getElementById('catNombre').value = '';
-    document.getElementById('catPrecio').value = '';
+        mostrarToast("¡Concepto guardado en la nube con éxito!");
+        document.getElementById('catNombre').value = '';
+        document.getElementById('catPrecio').value = '';
 
-    document.getElementById('filtroAreaCatalogo').value = idArea;
-    await cargarTablaCatalogo();
+        document.getElementById('filtroAreaCatalogo').value = idArea;
+        await cargarTablaCatalogo();
 
-    if (document.getElementById('selArea').value == idArea) {
-        await cargarConceptos('selArea', 'selConcepto');
-    }
+        if (document.getElementById('selArea').value == idArea) {
+            await cargarConceptos('selArea', 'selConcepto');
+        }
+    });
 }
 
 async function moverConcepto(idConcepto, direccion) {
@@ -71,6 +73,8 @@ async function moverConcepto(idConcepto, direccion) {
     }
 }
 
+let catalogoCache = [];
+
 async function cargarTablaCatalogo() {
     let query = clienteSupabase.from('conceptos').select('*').order('id_area', { ascending: true }).order('orden', { ascending: true });
 
@@ -87,14 +91,20 @@ async function cargarTablaCatalogo() {
     const { data: conceptos, error } = await query;
     if (error) return;
 
-    const tbody = document.getElementById('tablaCatalogo');
-    tbody.innerHTML = '';
+    const texto = document.getElementById('buscarCatalogo').value.trim().toLowerCase();
+    const conceptosFiltrados = texto
+        ? conceptos.filter(c => c.concepto.toLowerCase().includes(texto))
+        : conceptos;
 
-    conceptos.forEach(c => {
+    catalogoCache = conceptosFiltrados;
+
+    const tbody = document.getElementById('tablaCatalogo');
+
+    const filas = conceptosFiltrados.map(c => {
         const nombreArea = mapaAreas[c.id_area] || 'Desconocido';
         const etiquetaCliente = c.id_cliente ? (mapaClientes[c.id_cliente] || 'Cliente eliminado') : '🌍 Global';
 
-        tbody.innerHTML += `
+        return `
             <tr>
                 <td style="font-size: 0.9em; color: #666;">${escaparTexto(nombreArea)}</td>
                 <td><strong>${escaparTexto(c.concepto)}</strong></td>
@@ -104,20 +114,37 @@ async function cargarTablaCatalogo() {
                 <td style="display:flex; gap: 5px; flex-wrap: wrap;">
                     <button class="btn-edit" style="background:#7f8fa6;" onclick="moverConcepto(${c.id}, 'arriba')" title="Mover Arriba">🔼</button>
                     <button class="btn-edit" style="background:#7f8fa6;" onclick="moverConcepto(${c.id}, 'abajo')" title="Mover Abajo">🔽</button>
-                    <button class="btn-edit" data-id="${c.id}" data-nombre="${escaparAtributo(c.concepto)}" data-precio="${c.precio_total}" onclick="editarPrecio(this)">✏️</button>
+                    <button class="btn-edit" onclick="abrirEdicionConcepto(${c.id})" title="Editar concepto">✏️</button>
                     ${c.id_cliente ? `<button class="btn-edit" style="background:#44bd32;" onclick="compartirConceptoGlobal(${c.id})" title="Compartir a Catálogo Global">📤</button>` : ''}
-                    <button class="btn-danger" onclick="borrarConcepto(${c.id})">🗑️</button>
+                    <button class="btn-danger" onclick="borrarConcepto(${c.id})" title="Borrar concepto">🗑️</button>
                 </td>
             </tr>
         `;
     });
+    tbody.innerHTML = filas.join('');
+}
+
+function exportarCatalogoCSV() {
+    if (catalogoCache.length === 0) { mostrarToast("No hay conceptos para exportar", 'error'); return; }
+
+    const encabezado = ['Area', 'Concepto', 'Unidad', 'Precio', 'Cliente'];
+    const filas = catalogoCache.map(c => [
+        mapaAreas[c.id_area] || 'Desconocido',
+        c.concepto,
+        c.unidad,
+        c.precio_total,
+        c.id_cliente ? (mapaClientes[c.id_cliente] || 'Cliente eliminado') : 'Global'
+    ]);
+
+    descargarCSV('catalogo.csv', encabezado, filas);
 }
 
 async function compartirConceptoGlobal(idConcepto) {
     const { data: c, error } = await clienteSupabase.from('conceptos').select('*').eq('id', idConcepto).single();
     if (error || !c) return;
 
-    if (!confirm(`¿Agregar "${c.concepto}" al catálogo global?\nSe creará una copia disponible para todos los clientes; el precio de este cliente no se modifica.`)) return;
+    const confirmado = await confirmarAccion(`¿Agregar "${c.concepto}" al catálogo global? Se creará una copia disponible para todos los clientes; el precio de este cliente no se modifica.`);
+    if (!confirmado) return;
 
     const { data: conceptosGlobales } = await clienteSupabase.from('conceptos').select('orden').eq('id_area', c.id_area).is('id_cliente', null);
     let maxOrden = 0;
@@ -127,41 +154,55 @@ async function compartirConceptoGlobal(idConcepto) {
         { id_area: c.id_area, concepto: c.concepto, unidad: c.unidad, precio_total: c.precio_total, orden: maxOrden + 1, id_cliente: null }
     ]);
 
-    if (errorInsert) { alert("Error al compartir: " + errorInsert.message); return; }
-    alert("¡Concepto agregado al catálogo global!");
+    if (errorInsert) { mostrarToast("Error al compartir: " + errorInsert.message, 'error'); return; }
+    mostrarToast("¡Concepto agregado al catálogo global!");
     await cargarTablaCatalogo();
 }
 
-function editarPrecio(boton) {
-    idConceptoEditando = parseInt(boton.dataset.id);
-    const nombre = boton.dataset.nombre;
-    const precioActual = parseFloat(boton.dataset.precio);
+function abrirEdicionConcepto(id) {
+    const concepto = catalogoCache.find(c => c.id === id);
+    if (!concepto) return;
 
-    document.getElementById('modalPrecioConcepto').innerText = nombre;
-    document.getElementById('modalPrecioInput').value = precioActual;
-    document.getElementById('modalEditarPrecio').classList.remove('oculto');
-    document.getElementById('modalPrecioInput').focus();
+    idConceptoEditando = id;
+    document.getElementById('modalConceptoNombre').value = concepto.concepto;
+    document.getElementById('modalConceptoArea').value = concepto.id_area;
+    document.getElementById('modalConceptoUnidad').value = concepto.unidad;
+    document.getElementById('modalConceptoPrecio').value = concepto.precio_total;
+    document.getElementById('modalEditarConcepto').classList.remove('oculto');
 }
 
-function cerrarModalPrecio() {
+function cerrarModalConcepto() {
     idConceptoEditando = null;
-    document.getElementById('modalEditarPrecio').classList.add('oculto');
+    document.getElementById('modalEditarConcepto').classList.add('oculto');
 }
 
-async function confirmarEdicionPrecio() {
-    const nuevoPrecio = parseFloat(document.getElementById('modalPrecioInput').value);
-    if (isNaN(nuevoPrecio) || nuevoPrecio <= 0) {
-        alert("Ingresa un precio válido.");
+async function confirmarEdicionConcepto() {
+    const nombre = document.getElementById('modalConceptoNombre').value;
+    const idArea = parseInt(document.getElementById('modalConceptoArea').value);
+    const unidad = document.getElementById('modalConceptoUnidad').value;
+    const precio = parseFloat(document.getElementById('modalConceptoPrecio').value);
+
+    if (!nombre || !idArea || isNaN(precio) || precio <= 0) {
+        mostrarToast("Completa nombre, área y un precio válido.", 'error');
         return;
     }
-    await clienteSupabase.from('conceptos').update({ precio_total: nuevoPrecio }).eq('id', idConceptoEditando);
-    cerrarModalPrecio();
+
+    const { error } = await clienteSupabase.from('conceptos').update({
+        concepto: nombre, id_area: idArea, unidad: unidad, precio_total: precio
+    }).eq('id', idConceptoEditando);
+
+    if (error) { mostrarToast("Error al editar: " + error.message, 'error'); return; }
+
+    cerrarModalConcepto();
+    mostrarToast("Concepto actualizado con éxito");
     await cargarTablaCatalogo();
 }
 
 async function borrarConcepto(id) {
-    if (confirm("¿Estás seguro de borrar este concepto de la nube?")) {
+    const confirmado = await confirmarAccion("¿Estás seguro de borrar este concepto de la nube?");
+    if (confirmado) {
         await clienteSupabase.from('conceptos').delete().eq('id', id);
+        mostrarToast("Concepto borrado");
         await cargarTablaCatalogo();
     }
 }

@@ -24,7 +24,8 @@ async function cargarConceptos(origenId, destinoId) {
     if (error) return;
 
     if (!idClienteRaw) {
-        conceptos.forEach(c => select.innerHTML += `<option value="${c.id}">${escaparTexto(c.concepto)}</option>`);
+        const opciones = conceptos.map(c => `<option value="${c.id}">${escaparTexto(c.concepto)}</option>`);
+        select.innerHTML += opciones.join('');
         return;
     }
 
@@ -32,15 +33,17 @@ async function cargarConceptos(origenId, destinoId) {
     // qué conceptos son exclusivos de él y cuáles vienen del catálogo global.
     const delCliente = conceptos.filter(c => c.id_cliente);
     const globales = conceptos.filter(c => !c.id_cliente);
+    let extra = '';
 
     if (delCliente.length > 0) {
         const opciones = delCliente.map(c => `<option value="${c.id}">${escaparTexto(c.concepto)}</option>`).join('');
-        select.innerHTML += `<optgroup label="📌 Exclusivos de este cliente">${opciones}</optgroup>`;
+        extra += `<optgroup label="📌 Exclusivos de este cliente">${opciones}</optgroup>`;
     }
     if (globales.length > 0) {
         const opciones = globales.map(c => `<option value="${c.id}">${escaparTexto(c.concepto)}</option>`).join('');
-        select.innerHTML += `<optgroup label="🌍 Catálogo Global">${opciones}</optgroup>`;
+        extra += `<optgroup label="🌍 Catálogo Global">${opciones}</optgroup>`;
     }
+    select.innerHTML += extra;
 }
 
 async function prepararConcepto() {
@@ -71,7 +74,7 @@ function agregarAlPresupuesto() {
     const cantidad = parseFloat(document.getElementById('txtCantidad').value);
 
     if (!conceptoTemporal || isNaN(cantidad) || isNaN(precioUnitario) || cantidad <= 0) {
-        alert("Asegúrate de seleccionar un concepto y poner cantidad y precio válidos.");
+        mostrarToast("Asegúrate de seleccionar un concepto y poner cantidad y precio válidos.", 'error');
         return;
     }
 
@@ -103,25 +106,22 @@ function calcularTotales() {
 
 function actualizarTabla() {
     const tbody = document.getElementById('tablaPresupuesto');
-    tbody.innerHTML = '';
 
-    presupuestoActual.forEach(item => {
-        tbody.innerHTML += `
-            <tr>
-                <td>${escaparTexto(item.concepto)}</td>
-                <td>${escaparTexto(item.unidad)}</td>
-                <td>${item.cantidad}</td>
-                <td>$${item.precioUnitario.toFixed(2)}</td>
-                <td>$${item.importe.toFixed(2)}</td>
-                <td class="no-print"><button class="btn-danger" onclick="eliminarFila(${item.id})">X</button></td>
-            </tr>
-        `;
-    });
+    const filas = presupuestoActual.map(item => `
+        <tr>
+            <td>${escaparTexto(item.concepto)}</td>
+            <td>${escaparTexto(item.unidad)}</td>
+            <td>${item.cantidad}</td>
+            <td>$${item.precioUnitario.toFixed(2)}</td>
+            <td>$${item.importe.toFixed(2)}</td>
+            <td class="no-print"><button class="btn-danger" onclick="eliminarFila(${item.id})">X</button></td>
+        </tr>
+    `);
 
     const { herramienta, total } = calcularTotales();
 
     if (herramienta > 0) {
-        tbody.innerHTML += `
+        filas.push(`
             <tr class="fila-herramienta">
                 <td>Cargo por Herramienta Menor (5% de M.O.)</td>
                 <td>lote</td>
@@ -130,95 +130,153 @@ function actualizarTabla() {
                 <td>$${herramienta.toFixed(2)}</td>
                 <td class="no-print">Auto</td>
             </tr>
-        `;
+        `);
     }
 
+    tbody.innerHTML = filas.join('');
     document.getElementById('lblTotal').innerText = total.toFixed(2);
 }
 
 // ==========================================
 // GUARDADO E HISTORIAL
 // ==========================================
-async function guardarEImprimir() {
+async function guardarEImprimir(boton) {
     const idCliente = document.getElementById('selClientePresupuesto').value;
     const fecha = document.getElementById('fechaPresupuesto').value;
 
     if (!idCliente || presupuestoActual.length === 0) {
-        return alert("Selecciona un cliente y agrega conceptos antes de guardar.");
+        return mostrarToast("Selecciona un cliente y agrega conceptos antes de guardar.", 'error');
     }
 
     const { subtotal, herramienta, total } = calcularTotales();
 
-    const { data: nuevoPresupuesto, error } = await clienteSupabase
-        .from('presupuestos')
-        .insert([{ id_cliente: idCliente, fecha: fecha, total: total, subtotal: subtotal }])
-        .select()
-        .single();
+    await conBotonCargando(boton, 'Guardando...', async () => {
+        const filasDetalle = presupuestoActual.map((item, index) => ({
+            concepto: item.concepto,
+            unidad: item.unidad,
+            cantidad: item.cantidad,
+            precio_unitario: item.precioUnitario,
+            importe: item.importe,
+            orden: index
+        }));
 
-    if (error) {
-        alert("Error al guardar en el historial: " + error.message);
-        return;
-    }
+        if (herramienta > 0) {
+            filasDetalle.push({
+                concepto: 'Cargo por Herramienta Menor (5% de M.O.)',
+                unidad: 'lote',
+                cantidad: 1,
+                precio_unitario: herramienta,
+                importe: herramienta,
+                orden: filasDetalle.length
+            });
+        }
 
-    const filasDetalle = presupuestoActual.map((item, index) => ({
-        id_presupuesto: nuevoPresupuesto.id,
-        concepto: item.concepto,
-        unidad: item.unidad,
-        cantidad: item.cantidad,
-        precio_unitario: item.precioUnitario,
-        importe: item.importe,
-        orden: index
-    }));
-
-    if (herramienta > 0) {
-        filasDetalle.push({
-            id_presupuesto: nuevoPresupuesto.id,
-            concepto: 'Cargo por Herramienta Menor (5% de M.O.)',
-            unidad: 'lote',
-            cantidad: 1,
-            precio_unitario: herramienta,
-            importe: herramienta,
-            orden: filasDetalle.length
+        const { error } = await clienteSupabase.rpc('crear_presupuesto_con_detalle', {
+            p_id_cliente: idCliente,
+            p_fecha: fecha,
+            p_total: total,
+            p_subtotal: subtotal,
+            p_detalle: filasDetalle
         });
-    }
 
-    const { error: errorDetalle } = await clienteSupabase.from('detalle_presupuesto').insert(filasDetalle);
-    if (errorDetalle) {
-        alert("El presupuesto se guardó, pero hubo un error guardando el detalle: " + errorDetalle.message);
-    }
+        if (error) {
+            mostrarToast("Error al guardar en el historial: " + error.message, 'error');
+            return;
+        }
 
-    alert("¡Presupuesto guardado en el historial!");
-    cargarHistorial();
-    window.print();
-}
-
-async function cargarHistorial() {
-    const { data: historial, error } = await clienteSupabase
-        .from('presupuestos')
-        .select(`id, fecha, total, clientes(nombre)`)
-        .order('fecha', { ascending: false });
-
-    if (error) return;
-
-    const tbody = document.getElementById('tablaHistorial');
-    tbody.innerHTML = '';
-    historial.forEach(p => {
-        tbody.innerHTML += `
-            <tr>
-                <td>${escaparTexto(p.fecha)}</td>
-                <td>${escaparTexto(p.clientes ? p.clientes.nombre : 'Sin nombre')}</td>
-                <td>$${p.total.toFixed(2)}</td>
-                <td>
-                    <button class="btn-edit" onclick="verDetallePresupuesto(${p.id})" title="Ver Detalle">👁️</button>
-                    <button class="btn-danger" onclick="borrarPresupuesto(${p.id})">🗑️</button>
-                </td>
-            </tr>`;
+        mostrarToast("¡Presupuesto guardado en el historial!");
+        cargarHistorial();
+        window.print();
     });
 }
 
+function descargarPDF() {
+    if (presupuestoActual.length === 0) {
+        mostrarToast("Agrega conceptos antes de descargar el PDF.", 'error');
+        return;
+    }
+
+    const select = document.getElementById('selClientePresupuesto');
+    const nombreCliente = select.options[select.selectedIndex]?.text || 'Sin cliente';
+    const fecha = document.getElementById('fechaPresupuesto').value;
+    const { herramienta, total } = calcularTotales();
+
+    const doc = new jspdf.jsPDF();
+    doc.setFontSize(16);
+    doc.text('Presupuesto de Obra', 14, 15);
+    doc.setFontSize(11);
+    doc.text(`Cliente: ${nombreCliente}`, 14, 25);
+    doc.text(`Fecha: ${fecha}`, 14, 32);
+
+    const filas = presupuestoActual.map(item => [
+        item.concepto, item.unidad, String(item.cantidad), `$${item.precioUnitario.toFixed(2)}`, `$${item.importe.toFixed(2)}`
+    ]);
+    if (herramienta > 0) {
+        filas.push(['Cargo por Herramienta Menor (5% de M.O.)', 'lote', '1', `$${herramienta.toFixed(2)}`, `$${herramienta.toFixed(2)}`]);
+    }
+
+    doc.autoTable({
+        startY: 38,
+        head: [['Concepto', 'Unidad', 'Cant.', 'Precio Unit.', 'Importe']],
+        body: filas
+    });
+
+    const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 38;
+    doc.setFontSize(13);
+    doc.text(`TOTAL: $${total.toFixed(2)}`, 14, finalY + 10);
+
+    doc.save(`presupuesto_${nombreCliente}_${fecha}.pdf`);
+}
+
+let offsetHistorial = 0;
+const TAMANO_PAGINA_HISTORIAL = 20;
+let historialCache = [];
+
+async function cargarHistorial(cargarMas = false) {
+    if (!cargarMas) { offsetHistorial = 0; historialCache = []; }
+
+    const { data: historial, error } = await clienteSupabase
+        .from('presupuestos')
+        .select(`id, fecha, total, clientes(nombre)`)
+        .order('fecha', { ascending: false })
+        .range(offsetHistorial, offsetHistorial + TAMANO_PAGINA_HISTORIAL - 1);
+
+    if (error) return;
+
+    historialCache = cargarMas ? historialCache.concat(historial) : historial;
+    offsetHistorial += historial.length;
+
+    const btnCargarMas = document.getElementById('btnCargarMasHistorial');
+    btnCargarMas.style.display = historial.length < TAMANO_PAGINA_HISTORIAL ? 'none' : 'inline-block';
+
+    const tbody = document.getElementById('tablaHistorial');
+    const filas = historialCache.map(p => `
+        <tr>
+            <td>${escaparTexto(p.fecha)}</td>
+            <td>${escaparTexto(p.clientes ? p.clientes.nombre : 'Sin nombre')}</td>
+            <td>$${p.total.toFixed(2)}</td>
+            <td>
+                <button class="btn-edit" onclick="verDetallePresupuesto(${p.id})" title="Ver Detalle">👁️</button>
+                <button class="btn-danger" onclick="borrarPresupuesto(${p.id})" title="Borrar registro">🗑️</button>
+            </td>
+        </tr>`);
+    tbody.innerHTML = filas.join('');
+}
+
+function exportarHistorialCSV() {
+    if (historialCache.length === 0) { mostrarToast("No hay historial para exportar", 'error'); return; }
+
+    const encabezado = ['Fecha', 'Cliente', 'Total'];
+    const filas = historialCache.map(p => [p.fecha, p.clientes ? p.clientes.nombre : 'Sin nombre', p.total]);
+
+    descargarCSV('historial.csv', encabezado, filas);
+}
+
 async function borrarPresupuesto(id) {
-    if (confirm("¿Eliminar este registro del historial?")) {
+    const confirmado = await confirmarAccion("¿Eliminar este registro del historial?");
+    if (confirmado) {
         await clienteSupabase.from('presupuestos').delete().eq('id', id);
+        mostrarToast("Registro eliminado");
         cargarHistorial();
     }
 }
@@ -230,24 +288,22 @@ async function verDetallePresupuesto(idPresupuesto) {
         .eq('id_presupuesto', idPresupuesto)
         .order('orden', { ascending: true });
 
-    if (error) { alert("Error al cargar el detalle: " + error.message); return; }
+    if (error) { mostrarToast("Error al cargar el detalle: " + error.message, 'error'); return; }
 
     const tbody = document.getElementById('tablaDetalleHistorial');
-    tbody.innerHTML = '';
 
     if (!detalle || detalle.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5">Este presupuesto no tiene detalle guardado (fue creado antes de esta función).</td></tr>';
     } else {
-        detalle.forEach(item => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${escaparTexto(item.concepto)}</td>
-                    <td>${escaparTexto(item.unidad)}</td>
-                    <td>${item.cantidad}</td>
-                    <td>$${Number(item.precio_unitario).toFixed(2)}</td>
-                    <td>$${Number(item.importe).toFixed(2)}</td>
-                </tr>`;
-        });
+        const filas = detalle.map(item => `
+            <tr>
+                <td>${escaparTexto(item.concepto)}</td>
+                <td>${escaparTexto(item.unidad)}</td>
+                <td>${item.cantidad}</td>
+                <td>$${Number(item.precio_unitario).toFixed(2)}</td>
+                <td>$${Number(item.importe).toFixed(2)}</td>
+            </tr>`);
+        tbody.innerHTML = filas.join('');
     }
 
     document.getElementById('modalDetalleHistorial').classList.remove('oculto');

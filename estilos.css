@@ -140,6 +140,11 @@ button:hover {
     opacity: 0.9;
 }
 
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .btn-add {
     background-color: var(--secondary);
     margin-top: auto;
@@ -359,6 +364,40 @@ th {
     margin-top: 20px;
 }
 
+/* --- Toasts (reemplazan alert()) --- */
+#toastContainer {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    color: white;
+    padding: 14px 20px;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    font-weight: 600;
+    max-width: 320px;
+    animation: toast-entrada 0.2s ease-out;
+}
+
+.toast-exito {
+    background-color: #44bd32;
+}
+
+.toast-error {
+    background-color: #e84118;
+}
+
+@keyframes toast-entrada {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
 /* --- DISEÑO RESPONSIVO --- */
 
 /* Esta regla se aplica a pantallas menores a 768px (celulares y tablets) */
@@ -423,6 +462,26 @@ th {
     .login-box {
         padding: 20px;
         width: 90%;
+    }
+
+    /* 7. Toasts a ancho completo en celular */
+    #toastContainer {
+        left: 10px;
+        right: 10px;
+        top: 10px;
+    }
+
+    .toast {
+        max-width: none;
+    }
+
+    /* 8. Barra de filtros del catálogo/historial en columna */
+    .barra-filtro {
+        width: 100%;
+    }
+
+    .contenedor-filtro {
+        width: 100%;
     }
 }
 

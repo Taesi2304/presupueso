@@ -7,6 +7,8 @@
     <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/913/913428.png">
     <link rel="stylesheet" href="estilos.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 
 </head>
 
@@ -38,10 +40,10 @@
         <div id="main-app" style="display: none;">
 
             <div class="tabs no-print header-tabs">
-                <button class="tab-btn active" onclick="cambiarPestana('presupuesto')">📝 Presupuesto</button>
-                <button class="tab-btn" onclick="cambiarPestana('catalogo')">⚙️ Catálogo</button>
-                <button class="tab-btn" onclick="cambiarPestana('clientes')">👥 Clientes</button>
-                <button class="tab-btn" onclick="cambiarPestana('historial')">📜 Historial</button>
+                <button class="tab-btn active" onclick="cambiarPestana('presupuesto', this)">📝 Presupuesto</button>
+                <button class="tab-btn" onclick="cambiarPestana('catalogo', this)">⚙️ Catálogo</button>
+                <button class="tab-btn" onclick="cambiarPestana('clientes', this)">👥 Clientes</button>
+                <button class="tab-btn" onclick="cambiarPestana('historial', this)">📜 Historial</button>
                 <button class="btn-logout cursor-pointer" onclick="cerrarSesion()">Cerrar Sesión</button>
             </div>
 
@@ -132,7 +134,10 @@
                     <p class="total-final">TOTAL: $<span id="lblTotal">0.00</span></p>
                 </div>
 
-                <button class="btn-print no-print" onclick="guardarEImprimir()">💾 Guardar y Generar PDF</button>
+                <div class="grid-2 no-print">
+                    <button class="btn-print" onclick="guardarEImprimir(this)">💾 Guardar e Imprimir</button>
+                    <button class="btn-print" style="background:#0097e6;" onclick="descargarPDF()">📄 Descargar PDF</button>
+                </div>
             </div>
 
             <div id="tab-catalogo" class="tab-content no-print">
@@ -173,12 +178,15 @@
                             <input type="number" id="catPrecio" step="0.1">
                         </div>
                         <div class="form-group">
-                            <button class="btn-add" onclick="guardarNuevoConcepto()">💾 Guardar</button>
+                            <button class="btn-add" onclick="guardarNuevoConcepto(this)">💾 Guardar</button>
                         </div>
                     </div>
                 </div>
                 <div class="barra-filtro">
                     <h2 class="sin-margen">Lista de Precios Actuales</h2>
+                    <div class="form-group contenedor-filtro">
+                        <input type="text" id="buscarCatalogo" placeholder="🔎 Buscar concepto..." class="select-resaltado" oninput="cargarTablaCatalogo()">
+                    </div>
                     <div class="form-group contenedor-filtro">
                         <select id="filtroAreaCatalogo" onchange="cargarTablaCatalogo()" class="select-resaltado">
                             <option value="">Todas las Áreas...</option>
@@ -190,6 +198,7 @@
                             <option value="global">🌍 Solo Catálogo Global</option>
                         </select>
                     </div>
+                    <button class="btn-edit" onclick="exportarCatalogoCSV()" title="Exportar catálogo a CSV">⬇️ Exportar CSV</button>
                 </div>
             <div class="table-container">
                 <table>
@@ -216,7 +225,7 @@
                         <input type="text" id="cliNombre" placeholder="Nombre Completo">
                         <input type="text" id="cliTelefono" placeholder="Teléfono">
                         <input type="text" id="cliDireccion" placeholder="Dirección/Obra">
-                        <button class="btn-add" onclick="guardarCliente()">➕ Guardar Cliente</button>
+                        <button class="btn-add" onclick="guardarCliente(this)">➕ Guardar Cliente</button>
                     </div>
                 </div>
                 <div class="table-container">
@@ -236,6 +245,9 @@
             <div id="tab-historial" class="tab-content no-print">
                 <h1>Historial de Registro de Presupuestos Realizados
                 </h1>
+                <div class="barra-filtro">
+                    <button class="btn-edit" onclick="exportarHistorialCSV()" title="Exportar historial a CSV">⬇️ Exportar CSV</button>
+                </div>
             <div class="table-container">
                 <table>
                     <thead>
@@ -248,22 +260,77 @@
                     </thead>
                     <tbody id="tablaHistorial"></tbody>
                 </table></div>
+                <div class="opciones-cierre" style="text-align:center;">
+                    <button id="btnCargarMasHistorial" class="btn-edit" onclick="cargarHistorial(true)">Cargar más</button>
+                </div>
             </div>
 
         </div>
     </div>
 
-    <div id="modalEditarPrecio" class="modal-overlay oculto">
+    <div id="modalEditarConcepto" class="modal-overlay oculto">
         <div class="modal-box">
-            <h3>Editar Precio</h3>
-            <p id="modalPrecioConcepto" class="modal-concepto"></p>
+            <h3>Editar Concepto</h3>
             <div class="form-group">
-                <label>Nuevo precio ($):</label>
-                <input type="number" id="modalPrecioInput" step="0.1" min="0">
+                <label>Nombre del concepto:</label>
+                <input type="text" id="modalConceptoNombre">
+            </div>
+            <div class="form-group espaciado-top">
+                <label>Área:</label>
+                <select id="modalConceptoArea"></select>
+            </div>
+            <div class="form-group espaciado-top">
+                <label>Unidad:</label>
+                <select id="modalConceptoUnidad">
+                    <option value="m2">m2</option>
+                    <option value="m3">m3</option>
+                    <option value="ml">ml</option>
+                    <option value="pza">pza</option>
+                    <option value="lote">lote</option>
+                    <option value="salida">salida</option>
+                    <option value="jornada">jornada/día</option>
+                </select>
+            </div>
+            <div class="form-group espaciado-top">
+                <label>Precio ($):</label>
+                <input type="number" id="modalConceptoPrecio" step="0.1" min="0">
             </div>
             <div class="modal-acciones">
-                <button class="btn-danger" onclick="cerrarModalPrecio()">Cancelar</button>
-                <button class="btn-add" onclick="confirmarEdicionPrecio()">Guardar</button>
+                <button class="btn-danger" onclick="cerrarModalConcepto()">Cancelar</button>
+                <button class="btn-add" onclick="confirmarEdicionConcepto()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalEditarCliente" class="modal-overlay oculto">
+        <div class="modal-box">
+            <h3>Editar Cliente</h3>
+            <div class="form-group">
+                <label>Nombre Completo:</label>
+                <input type="text" id="modalClienteNombre">
+            </div>
+            <div class="form-group espaciado-top">
+                <label>Teléfono:</label>
+                <input type="text" id="modalClienteTelefono">
+            </div>
+            <div class="form-group espaciado-top">
+                <label>Dirección/Obra:</label>
+                <input type="text" id="modalClienteDireccion">
+            </div>
+            <div class="modal-acciones">
+                <button class="btn-danger" onclick="cerrarModalCliente()">Cancelar</button>
+                <button class="btn-add" onclick="confirmarEdicionCliente()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalConfirmar" class="modal-overlay oculto">
+        <div class="modal-box">
+            <h3>Confirmar</h3>
+            <p id="modalConfirmarMensaje" class="modal-concepto"></p>
+            <div class="modal-acciones">
+                <button class="btn-danger" onclick="responderConfirmacion(false)">Cancelar</button>
+                <button class="btn-add" onclick="responderConfirmacion(true)">Aceptar</button>
             </div>
         </div>
     </div>

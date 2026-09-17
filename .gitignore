@@ -9,3 +9,5 @@
 # Archivos temporales y del sistema
 .DS_Store
 Thumbs.db
+.migraciones-bd/
+supabase_rls.sql

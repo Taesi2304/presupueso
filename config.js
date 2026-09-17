@@ -11,6 +11,7 @@ const clienteSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 let presupuestoActual = [];
 let conceptoTemporal = null;
 let idConceptoEditando = null;
+let idClienteEditando = null;
 let mapaAreas = {};
 let mapaClientes = {};
 
@@ -34,4 +35,63 @@ function escaparAtributo(valor) {
         .replace(/'/g, '&#39;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+}
+
+// ==========================================
+// UI COMPARTIDA: toasts, confirmaciones y botones "cargando"
+// Reemplazan alert()/confirm() nativos por componentes con el
+// estilo propio de la plataforma (ver modales en index.html).
+// ==========================================
+function mostrarToast(mensaje, tipo = 'exito') {
+    let contenedor = document.getElementById('toastContainer');
+    if (!contenedor) {
+        contenedor = document.createElement('div');
+        contenedor.id = 'toastContainer';
+        document.body.appendChild(contenedor);
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${tipo}`;
+    toast.textContent = mensaje;
+    contenedor.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+}
+
+let _resolverConfirmacion = null;
+function confirmarAccion(mensaje) {
+    document.getElementById('modalConfirmarMensaje').textContent = mensaje;
+    document.getElementById('modalConfirmar').classList.remove('oculto');
+    return new Promise(resolve => { _resolverConfirmacion = resolve; });
+}
+
+function responderConfirmacion(resultado) {
+    document.getElementById('modalConfirmar').classList.add('oculto');
+    if (_resolverConfirmacion) {
+        _resolverConfirmacion(resultado);
+        _resolverConfirmacion = null;
+    }
+}
+
+function descargarCSV(nombreArchivo, encabezado, filas) {
+    const escaparCelda = valor => `"${String(valor).replace(/"/g, '""')}"`;
+    const lineas = [encabezado, ...filas].map(fila => fila.map(escaparCelda).join(','));
+    const contenido = lineas.join('\r\n');
+
+    const blob = new Blob(['﻿' + contenido], { type: 'text/csv;charset=utf-8;' });
+    const enlace = document.createElement('a');
+    enlace.href = URL.createObjectURL(blob);
+    enlace.download = nombreArchivo;
+    enlace.click();
+    URL.revokeObjectURL(enlace.href);
+}
+
+async function conBotonCargando(boton, textoCargando, fn) {
+    const textoOriginal = boton.innerHTML;
+    boton.disabled = true;
+    boton.innerHTML = textoCargando;
+    try {
+        return await fn();
+    } finally {
+        boton.disabled = false;
+        boton.innerHTML = textoOriginal;
+    }
 }
