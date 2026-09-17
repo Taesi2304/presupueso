@@ -1,0 +1,11 @@
+# Variables de entorno y configuraciones locales
+.env
+.env.*
+!.env.example
+
+# Configuración local de Claude Code
+.claude/
+
+# Archivos temporales y del sistema
+.DS_Store
+Thumbs.db

@@ -23,7 +23,24 @@ async function cargarConceptos(origenId, destinoId) {
     const { data: conceptos, error } = await query;
     if (error) return;
 
-    conceptos.forEach(c => select.innerHTML += `<option value="${c.id}">${escaparTexto(c.concepto)}</option>`);
+    if (!idClienteRaw) {
+        conceptos.forEach(c => select.innerHTML += `<option value="${c.id}">${escaparTexto(c.concepto)}</option>`);
+        return;
+    }
+
+    // Con un cliente seleccionado, se agrupa visualmente para distinguir
+    // qué conceptos son exclusivos de él y cuáles vienen del catálogo global.
+    const delCliente = conceptos.filter(c => c.id_cliente);
+    const globales = conceptos.filter(c => !c.id_cliente);
+
+    if (delCliente.length > 0) {
+        const opciones = delCliente.map(c => `<option value="${c.id}">${escaparTexto(c.concepto)}</option>`).join('');
+        select.innerHTML += `<optgroup label="📌 Exclusivos de este cliente">${opciones}</optgroup>`;
+    }
+    if (globales.length > 0) {
+        const opciones = globales.map(c => `<option value="${c.id}">${escaparTexto(c.concepto)}</option>`).join('');
+        select.innerHTML += `<optgroup label="🌍 Catálogo Global">${opciones}</optgroup>`;
+    }
 }
 
 async function prepararConcepto() {
