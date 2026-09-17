@@ -409,6 +409,15 @@ async function verDetallePresupuesto(idPresupuesto) {
         tbody.innerHTML = filas.join('');
     }
 
+    const { data: pagos } = await clienteSupabase.from('pagos_presupuesto').select('monto').eq('id_presupuesto', idPresupuesto);
+    const cobrado = (pagos || []).reduce((s, p) => s + Number(p.monto), 0);
+    const presupuesto = historialCache.find(p => p.id === idPresupuesto);
+    const totalPresupuesto = presupuesto ? Number(presupuesto.total) : 0;
+    const pendiente = totalPresupuesto - cobrado;
+
+    document.getElementById('resumenPagosDetalle').textContent =
+        `Cobrado: $${cobrado.toFixed(2)} — Pendiente: $${pendiente.toFixed(2)}`;
+
     document.getElementById('modalDetalleHistorial').classList.remove('oculto');
 }
 

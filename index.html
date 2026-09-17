@@ -45,6 +45,7 @@
                 <button class="tab-btn" onclick="cambiarPestana('areas', this)">🏗️ Áreas</button>
                 <button class="tab-btn" onclick="cambiarPestana('clientes', this)">👥 Clientes</button>
                 <button class="tab-btn" onclick="cambiarPestana('historial', this)">📜 Historial</button>
+                <button class="tab-btn" onclick="cambiarPestana('pagos', this)">💰 Pagos</button>
                 <button class="btn-logout cursor-pointer" onclick="cerrarSesion()">Cerrar Sesión</button>
             </div>
 
@@ -308,6 +309,136 @@
                 </div>
             </div>
 
+            <div id="tab-pagos" class="tab-content no-print">
+                <h1>Control de Pagos y Gastos</h1>
+
+                <div class="seccion-agregar">
+                    <h2>Filtrar por Fecha</h2>
+                    <div class="grid-3">
+                        <div class="form-group">
+                            <label>Desde:</label>
+                            <input type="date" id="fechaDesdePagos">
+                        </div>
+                        <div class="form-group">
+                            <label>Hasta:</label>
+                            <input type="date" id="fechaHastaPagos">
+                        </div>
+                        <div class="form-group">
+                            <button class="btn-add" onclick="aplicarFiltroFechas()">🔎 Filtrar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="totales-box">
+                    <p class="texto-mediano sin-margen">Total Cobrado: $<span id="lblTotalCobrado">0.00</span></p>
+                    <p class="texto-mediano sin-margen">Total Gastado: $<span id="lblTotalGastado">0.00</span></p>
+                    <p class="total-final">Balance: $<span id="lblBalance">0.00</span></p>
+                </div>
+
+                <div class="seccion-agregar espaciado-top">
+                    <h2>Pagos de Presupuestos (Anticipos/Abonos)</h2>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Presupuesto:</label>
+                            <select id="pagoPresupuesto">
+                                <option value="">Seleccione...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha del pago:</label>
+                            <input type="date" id="pagoFecha">
+                        </div>
+                    </div>
+                    <div class="grid-3 espaciado-top">
+                        <div class="form-group">
+                            <label>Concepto:</label>
+                            <select id="pagoConcepto">
+                                <option value="Anticipo">Anticipo</option>
+                                <option value="Abono">Abono</option>
+                                <option value="Liquidación Final">Liquidación Final</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Monto ($):</label>
+                            <input type="number" id="pagoMonto" step="0.1" min="0.01">
+                        </div>
+                        <div class="form-group">
+                            <button class="btn-add" onclick="guardarPago(this)">➕ Registrar Pago</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="barra-filtro">
+                    <button class="btn-edit" onclick="exportarPagosCSV()" title="Exportar pagos a CSV">⬇️ Exportar CSV</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Total Presupuesto</th>
+                                <th>Fecha Pago</th>
+                                <th>Concepto</th>
+                                <th>Monto</th>
+                                <th>Saldo Pendiente</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaPagos"></tbody>
+                    </table>
+                </div>
+
+                <div class="seccion-agregar espaciado-top">
+                    <h2>Gastos Generales (Nómina, Sueldos, Materiales...)</h2>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Fecha:</label>
+                            <input type="date" id="gastoFecha">
+                        </div>
+                        <div class="form-group">
+                            <label>Categoría:</label>
+                            <select id="gastoCategoria">
+                                <option value="Nómina/Sueldos">Nómina/Sueldos</option>
+                                <option value="Materiales">Materiales</option>
+                                <option value="Herramienta">Herramienta</option>
+                                <option value="Transporte">Transporte</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-3 espaciado-top">
+                        <div class="form-group">
+                            <label>Concepto:</label>
+                            <input type="text" id="gastoConcepto" placeholder="Ej. Sueldo semana del 15 al 21 de sept">
+                        </div>
+                        <div class="form-group">
+                            <label>Monto ($):</label>
+                            <input type="number" id="gastoMonto" step="0.1" min="0.01">
+                        </div>
+                        <div class="form-group">
+                            <button class="btn-add" onclick="guardarGasto(this)">➕ Registrar Gasto</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="barra-filtro">
+                    <button class="btn-edit" onclick="exportarGastosCSV()" title="Exportar gastos a CSV">⬇️ Exportar CSV</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Categoría</th>
+                                <th>Concepto</th>
+                                <th>Monto</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaGastos"></tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -409,6 +540,7 @@
                     <tbody id="tablaDetalleHistorial"></tbody>
                 </table>
             </div>
+            <p id="resumenPagosDetalle" class="texto-mediano espaciado-top"></p>
             <div class="modal-acciones">
                 <button class="btn-danger" onclick="cerrarModalDetalle()">Cerrar</button>
             </div>
@@ -421,6 +553,7 @@
     <script src="clientes.js"></script>
     <script src="catalogo.js"></script>
     <script src="presupuesto.js"></script>
+    <script src="pagos.js"></script>
 </body>
 
 </html>

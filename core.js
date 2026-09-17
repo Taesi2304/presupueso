@@ -5,11 +5,16 @@ async function inicializarDatos() {
     await cargarAreas();
 
     document.getElementById('fechaPresupuesto').valueAsDate = new Date();
+    document.getElementById('pagoFecha').valueAsDate = new Date();
+    document.getElementById('gastoFecha').valueAsDate = new Date();
 
     await cargarClientes();
     await cargarHistorial();
     await cargarTablaCatalogo();
     await renderizarListaConceptos();
+    await cargarPresupuestosParaPago();
+    await cargarPagosPresupuesto();
+    await cargarGastos();
 }
 
 function llenarMenuDesplegable(selectId, items, textoDefault) {
