@@ -9,6 +9,28 @@ let conceptoTemporal = null;
 let mapaAreas = {};
 
 // ==========================================
+// UTILIDADES ANTI-XSS
+// Todo texto que venga de la base de datos (nombres, direcciones, etc.)
+// debe pasar por aquí antes de insertarse con innerHTML.
+// ==========================================
+function escaparTexto(valor) {
+    if (valor === null || valor === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(valor);
+    return div.innerHTML;
+}
+
+function escaparAtributo(valor) {
+    if (valor === null || valor === undefined) return '';
+    return String(valor)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+// ==========================================
 // SEGURIDAD Y LOGIN
 // ==========================================
 async function verificarSesion() {
@@ -81,7 +103,7 @@ async function inicializarDatos() {
 function llenarMenuDesplegable(selectId, areas, textoDefault) {
     const select = document.getElementById(selectId);
     select.innerHTML = `<option value="">${textoDefault}</option>`;
-    areas.forEach(a => select.innerHTML += `<option value="${a.id}">${a.nombre}</option>`);
+    areas.forEach(a => select.innerHTML += `<option value="${a.id}">${escaparTexto(a.nombre)}</option>`);
 }
 
 function cambiarPestana(pestana) {
@@ -106,12 +128,12 @@ async function cargarClientes() {
     clientes.forEach(c => {
         tbody.innerHTML += `
             <tr>
-                <td>${c.nombre}</td>
-                <td>${c.telefono || '-'}</td>
-                <td>${c.direccion || '-'}</td>
+                <td>${escaparTexto(c.nombre)}</td>
+                <td>${escaparTexto(c.telefono) || '-'}</td>
+                <td>${escaparTexto(c.direccion) || '-'}</td>
                 <td><button class="btn-danger" onclick="borrarCliente(${c.id})">🗑️</button></td>
             </tr>`;
-        select.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
+        select.innerHTML += `<option value="${c.id}">${escaparTexto(c.nombre)}</option>`;
     });
 }
 
@@ -180,8 +202,8 @@ async function cargarHistorial() {
     historial.forEach(p => {
         tbody.innerHTML += `
             <tr>
-                <td>${p.fecha}</td>
-                <td>${p.clientes ? p.clientes.nombre : 'Sin nombre'}</td>
+                <td>${escaparTexto(p.fecha)}</td>
+                <td>${escaparTexto(p.clientes ? p.clientes.nombre : 'Sin nombre')}</td>
                 <td>$${p.total.toFixed(2)}</td>
                 <td><button class="btn-danger" onclick="borrarPresupuesto(${p.id})">🗑️</button></td>
             </tr>`;
@@ -209,7 +231,7 @@ async function cargarConceptos(origenId, destinoId) {
     const { data: conceptos, error } = await clienteSupabase.from('conceptos').select('*').eq('id_area', idArea).order('orden', { ascending: true });
     if (error) return;
 
-    conceptos.forEach(c => select.innerHTML += `<option value="${c.id}">${c.concepto}</option>`);
+    conceptos.forEach(c => select.innerHTML += `<option value="${c.id}">${escaparTexto(c.concepto)}</option>`);
 }
 
 async function prepararConcepto() {
@@ -272,8 +294,8 @@ function actualizarTabla() {
         subtotalPuro += item.importe;
         tbody.innerHTML += `
             <tr>
-                <td>${item.concepto}</td>
-                <td>${item.unidad}</td>
+                <td>${escaparTexto(item.concepto)}</td>
+                <td>${escaparTexto(item.unidad)}</td>
                 <td>${item.cantidad}</td>
                 <td>$${item.precioUnitario.toFixed(2)}</td>
                 <td>$${item.importe.toFixed(2)}</td>
@@ -378,14 +400,14 @@ async function cargarTablaCatalogo() {
         const nombreArea = mapaAreas[c.id_area] || 'Desconocido';
         tbody.innerHTML += `
             <tr>
-                <td style="font-size: 0.9em; color: #666;">${nombreArea}</td>
-                <td><strong>${c.concepto}</strong></td>
-                <td>${c.unidad}</td>
+                <td style="font-size: 0.9em; color: #666;">${escaparTexto(nombreArea)}</td>
+                <td><strong>${escaparTexto(c.concepto)}</strong></td>
+                <td>${escaparTexto(c.unidad)}</td>
                 <td>$${c.precio_total.toFixed(2)}</td>
                 <td style="display:flex; gap: 5px;">
                     <button class="btn-edit" style="background:#7f8fa6;" onclick="moverConcepto(${c.id}, 'arriba')" title="Mover Arriba">🔼</button>
                     <button class="btn-edit" style="background:#7f8fa6;" onclick="moverConcepto(${c.id}, 'abajo')" title="Mover Abajo">🔽</button>
-                    <button class="btn-edit" onclick="editarPrecio(${c.id}, '${c.concepto}', ${c.precio_total})">✏️</button>
+                    <button class="btn-edit" data-id="${c.id}" data-nombre="${escaparAtributo(c.concepto)}" data-precio="${c.precio_total}" onclick="editarPrecio(this)">✏️</button>
                     <button class="btn-danger" onclick="borrarConcepto(${c.id})">🗑️</button>
                 </td>
             </tr>
@@ -393,7 +415,11 @@ async function cargarTablaCatalogo() {
     });
 }
 
-async function editarPrecio(id, nombre, precioViejo) {
+async function editarPrecio(boton) {
+    const id = parseInt(boton.dataset.id);
+    const nombre = boton.dataset.nombre;
+    const precioViejo = parseFloat(boton.dataset.precio);
+
     const nuevoPrecio = prompt(`Ingresa el nuevo precio para:\n${nombre}`, precioViejo);
     if (nuevoPrecio !== null && nuevoPrecio !== "" && !isNaN(nuevoPrecio)) {
         await clienteSupabase.from('conceptos').update({ precio_total: parseFloat(nuevoPrecio) }).eq('id', id);
