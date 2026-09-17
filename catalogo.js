@@ -3,6 +3,54 @@
 // Un concepto con id_cliente = NULL es global (visible para todos).
 // Un concepto con id_cliente = X es exclusivo del cliente X.
 // ==========================================
+
+// Áreas (oficios): se administran desde aquí en vez de insertarlas directo
+// en la base de datos, para que se puedan ir agregando según se necesiten.
+async function cargarAreas() {
+    const { data: areas, error } = await clienteSupabase.from('areas').select('*').order('id', { ascending: true });
+    if (error) { mostrarToast("Error al cargar áreas: " + error.message, 'error'); return; }
+
+    mapaAreas = {};
+    areas.forEach(a => mapaAreas[a.id] = a.nombre);
+
+    llenarMenuDesplegable('selArea', areas, 'Todas las áreas...');
+    llenarMenuDesplegable('catArea', areas, 'Seleccione Área...');
+    llenarMenuDesplegable('filtroAreaCatalogo', areas, 'Todas las Áreas...');
+    llenarMenuDesplegable('modalConceptoArea', areas, 'Seleccione Área...');
+
+    const filas = areas.map(a => `
+        <tr>
+            <td>${escaparTexto(a.nombre)}</td>
+            <td><button class="btn-danger" onclick="borrarArea(${a.id})" title="Borrar área">🗑️</button></td>
+        </tr>`);
+    document.getElementById('tablaAreas').innerHTML = filas.join('');
+}
+
+async function guardarNuevaArea(boton) {
+    const nombre = document.getElementById('areaNombre').value.trim();
+    if (!nombre) { mostrarToast("Escribe el nombre del área.", 'error'); return; }
+
+    await conBotonCargando(boton, 'Guardando...', async () => {
+        const { error } = await clienteSupabase.from('areas').insert([{ nombre }]);
+        if (error) { mostrarToast("Error al guardar el área: " + error.message, 'error'); return; }
+
+        document.getElementById('areaNombre').value = '';
+        mostrarToast("¡Área agregada con éxito!");
+        await cargarAreas();
+    });
+}
+
+async function borrarArea(id) {
+    const confirmado = await confirmarAccion("¿Borrar esta área? Solo se puede borrar si no tiene conceptos guardados en ella.");
+    if (!confirmado) return;
+
+    const { error } = await clienteSupabase.from('areas').delete().eq('id', id);
+    if (error) { mostrarToast("No se pudo borrar: primero quita o mueve los conceptos que tiene esta área.", 'error'); return; }
+
+    mostrarToast("Área borrada");
+    await cargarAreas();
+}
+
 function llenarFiltroClienteCatalogo(clientes) {
     const select = document.getElementById('filtroClienteCatalogo');
     const valorActual = select.value;

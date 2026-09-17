@@ -2,16 +2,7 @@
 // INICIO, CARGA DE DATOS MAESTROS Y NAVEGACIÓN
 // ==========================================
 async function inicializarDatos() {
-    const { data: areas, error } = await clienteSupabase.from('areas').select('*').order('id', { ascending: true });
-    if (error) { mostrarToast("Error de conexión: " + error.message, 'error'); return; }
-
-    mapaAreas = {};
-    areas.forEach(a => mapaAreas[a.id] = a.nombre);
-
-    llenarMenuDesplegable('selArea', areas, 'Seleccione Área...');
-    llenarMenuDesplegable('catArea', areas, 'Seleccione Área...');
-    llenarMenuDesplegable('filtroAreaCatalogo', areas, 'Todas las Áreas...');
-    llenarMenuDesplegable('modalConceptoArea', areas, 'Seleccione Área...');
+    await cargarAreas();
 
     document.getElementById('fechaPresupuesto').valueAsDate = new Date();
 

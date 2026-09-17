@@ -133,6 +133,26 @@
 
             <div id="tab-catalogo" class="tab-content no-print">
                 <h1>Administrar Catálogo</h1>
+
+                <div class="seccion-agregar">
+                    <h2>Áreas (Oficios)</h2>
+                    <div class="grid-2">
+                        <input type="text" id="areaNombre" placeholder="Ej. Cimentación, Herrería, Accesos...">
+                        <button class="btn-add" onclick="guardarNuevaArea(this)">➕ Agregar Área</button>
+                    </div>
+                    <div class="table-container espaciado-top">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Área</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaAreas"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="seccion-agregar">
                     <h2>Nuevo Concepto</h2>
                     <div class="grid-3">
