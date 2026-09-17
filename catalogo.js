@@ -27,7 +27,7 @@ async function cargarAreas() {
 }
 
 async function guardarNuevaArea(boton) {
-    const nombre = document.getElementById('areaNombre').value.trim();
+    const nombre = normalizarTexto(document.getElementById('areaNombre').value);
     if (!nombre) { mostrarToast("Escribe el nombre del área.", 'error'); return; }
 
     await conBotonCargando(boton, 'Guardando...', async () => {
@@ -61,7 +61,7 @@ function llenarFiltroClienteCatalogo(clientes) {
 
 async function guardarNuevoConcepto(boton) {
     const idArea = parseInt(document.getElementById('catArea').value);
-    const nombre = document.getElementById('catNombre').value;
+    const nombre = normalizarTexto(document.getElementById('catNombre').value);
     const unidad = document.getElementById('catUnidad').value;
     const precio = parseFloat(document.getElementById('catPrecio').value);
     const idClienteRaw = document.getElementById('catCliente').value;
@@ -221,7 +221,7 @@ function cerrarModalConcepto() {
 }
 
 async function confirmarEdicionConcepto() {
-    const nombre = document.getElementById('modalConceptoNombre').value;
+    const nombre = normalizarTexto(document.getElementById('modalConceptoNombre').value);
     const idArea = parseInt(document.getElementById('modalConceptoArea').value);
     const unidad = document.getElementById('modalConceptoUnidad').value;
     const precio = parseFloat(document.getElementById('modalConceptoPrecio').value);

@@ -71,6 +71,12 @@ function responderConfirmacion(resultado) {
     }
 }
 
+// Para que conceptos, áreas y clientes se vean siempre parejos sin importar
+// cómo los escriba quien los captura (mayúsculas, minúsculas o mezclado).
+function normalizarTexto(valor) {
+    return String(valor || '').trim().replace(/\s+/g, ' ').toUpperCase();
+}
+
 function descargarCSV(nombreArchivo, encabezado, filas) {
     const escaparCelda = valor => `"${String(valor).replace(/"/g, '""')}"`;
     const lineas = [encabezado, ...filas].map(fila => fila.map(escaparCelda).join(','));

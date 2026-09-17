@@ -34,7 +34,7 @@ async function cargarClientes() {
 }
 
 async function guardarCliente(boton) {
-    const nombre = document.getElementById('cliNombre').value;
+    const nombre = normalizarTexto(document.getElementById('cliNombre').value);
     const tel = document.getElementById('cliTelefono').value;
     const dir = document.getElementById('cliDireccion').value;
 
@@ -73,7 +73,7 @@ function cerrarModalCliente() {
 }
 
 async function confirmarEdicionCliente() {
-    const nombre = document.getElementById('modalClienteNombre').value;
+    const nombre = normalizarTexto(document.getElementById('modalClienteNombre').value);
     if (!nombre) return mostrarToast("El nombre es obligatorio", 'error');
 
     const { error } = await clienteSupabase.from('clientes').update({

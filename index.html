@@ -65,11 +65,19 @@
                  <br>
                 <div class="seccion-agregar no-print">
                     <h2>Agregar Trabajos</h2>
-                    <div class="grid-2">
+                    <div class="grid-3">
                         <div class="form-group">
                             <label>Filtrar por Área:</label>
                             <select id="selArea" onchange="renderizarListaConceptos()">
                                 <option value="">Todas las áreas...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mostrar:</label>
+                            <select id="filtroOrigenConceptoPresupuesto" onchange="renderizarListaConceptos()">
+                                <option value="">Todos (Global + Cliente)</option>
+                                <option value="global">🌍 Solo Catálogo Global</option>
+                                <option value="cliente">📌 Solo de este Cliente</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -137,7 +145,7 @@
                 <div class="seccion-agregar">
                     <h2>Áreas (Oficios)</h2>
                     <div class="grid-2">
-                        <input type="text" id="areaNombre" placeholder="Ej. Cimentación, Herrería, Accesos...">
+                        <input type="text" id="areaNombre" class="input-mayusculas" placeholder="Ej. Cimentación, Herrería, Accesos...">
                         <button class="btn-add" onclick="guardarNuevaArea(this)">➕ Agregar Área</button>
                     </div>
                     <div class="table-container espaciado-top">
@@ -162,7 +170,7 @@
                         </div>
                         <div class="form-group">
                             <label>Nombre del concepto:</label>
-                            <input type="text" id="catNombre" placeholder="Ej. Firme de concreto">
+                            <input type="text" id="catNombre" class="input-mayusculas" placeholder="Ej. Firme de concreto">
                         </div>
                         <div class="form-group">
                             <label>Cliente (opcional):</label>
@@ -233,7 +241,7 @@
                 <div class="seccion-agregar">
                     <h2>Nuevo Cliente</h2>
                     <div class="grid-3">
-                        <input type="text" id="cliNombre" placeholder="Nombre Completo">
+                        <input type="text" id="cliNombre" class="input-mayusculas" placeholder="Nombre Completo">
                         <input type="text" id="cliTelefono" placeholder="Teléfono">
                         <input type="text" id="cliDireccion" placeholder="Dirección/Obra">
                         <button class="btn-add" onclick="guardarCliente(this)">➕ Guardar Cliente</button>
@@ -284,7 +292,7 @@
             <h3>Editar Concepto</h3>
             <div class="form-group">
                 <label>Nombre del concepto:</label>
-                <input type="text" id="modalConceptoNombre">
+                <input type="text" id="modalConceptoNombre" class="input-mayusculas">
             </div>
             <div class="form-group espaciado-top">
                 <label>Área:</label>
@@ -318,7 +326,7 @@
             <h3>Editar Cliente</h3>
             <div class="form-group">
                 <label>Nombre Completo:</label>
-                <input type="text" id="modalClienteNombre">
+                <input type="text" id="modalClienteNombre" class="input-mayusculas">
             </div>
             <div class="form-group espaciado-top">
                 <label>Teléfono:</label>

@@ -21,8 +21,20 @@ async function renderizarListaConceptos() {
     const tbody = document.getElementById('listaConceptosPresupuesto');
     if (error) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">Error al cargar conceptos.</td></tr>'; return; }
 
+    const origen = document.getElementById('filtroOrigenConceptoPresupuesto').value;
+    let filtrados = conceptos;
+    if (origen === 'global') {
+        filtrados = filtrados.filter(c => !c.id_cliente);
+    } else if (origen === 'cliente') {
+        if (!idClienteRaw) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">Selecciona un cliente arriba para ver sus conceptos exclusivos.</td></tr>';
+            return;
+        }
+        filtrados = filtrados.filter(c => !!c.id_cliente);
+    }
+
     const texto = document.getElementById('buscarConceptoPresupuesto').value.trim().toLowerCase();
-    const filtrados = texto ? conceptos.filter(c => c.concepto.toLowerCase().includes(texto)) : conceptos;
+    if (texto) filtrados = filtrados.filter(c => c.concepto.toLowerCase().includes(texto));
 
     if (filtrados.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">No se encontraron conceptos.</td></tr>';
@@ -31,12 +43,14 @@ async function renderizarListaConceptos() {
 
     const filas = filtrados.map(c => {
         const nombreArea = mapaAreas[c.id_area] || '';
-        const etiquetaCliente = c.id_cliente ? ' 📌' : '';
+        const etiquetaOrigen = c.id_cliente
+            ? '<span class="badge-origen badge-cliente">📌 Cliente</span>'
+            : '<span class="badge-origen badge-global">🌍 Global</span>';
         return `
             <tr data-id="${c.id}">
                 <td><input type="checkbox" class="chk-concepto"></td>
                 <td>
-                    <strong class="texto-concepto">${escaparTexto(c.concepto)}</strong>${etiquetaCliente}
+                    <strong class="texto-concepto">${escaparTexto(c.concepto)}</strong> ${etiquetaOrigen}
                     <br><span style="font-size:0.8em; color:#888;">${escaparTexto(nombreArea)}</span>
                 </td>
                 <td class="texto-unidad">${escaparTexto(c.unidad)}</td>
