@@ -50,7 +50,7 @@
                 <div class="grid-2">
                     <div class="form-group">
                         <label>Seleccionar Cliente:</label>
-                        <select id="selClientePresupuesto">
+                        <select id="selClientePresupuesto" onchange="cargarConceptos('selArea', 'selConcepto')">
                             <option value="">Cargando clientes...</option>
                         </select>
                     </div>
@@ -139,7 +139,7 @@
                 <h1>Administrar Catálogo</h1>
                 <div class="seccion-agregar">
                     <h2>Nuevo Concepto</h2>
-                    <div class="grid-2">
+                    <div class="grid-3">
                         <div class="form-group">
                             <label>Área:</label>
                             <select id="catArea"></select>
@@ -147,6 +147,12 @@
                         <div class="form-group">
                             <label>Nombre del concepto:</label>
                             <input type="text" id="catNombre" placeholder="Ej. Firme de concreto">
+                        </div>
+                        <div class="form-group">
+                            <label>Cliente (opcional):</label>
+                            <select id="catCliente">
+                                <option value="">🌍 Catálogo Global (todos)</option>
+                            </select>
                         </div>
                     </div>
                     <div class="grid-3 espaciado-top">
@@ -178,6 +184,12 @@
                             <option value="">Todas las Áreas...</option>
                         </select>
                     </div>
+                    <div class="form-group contenedor-filtro">
+                        <select id="filtroClienteCatalogo" onchange="cargarTablaCatalogo()" class="select-resaltado">
+                            <option value="">Todos (Global + Clientes)</option>
+                            <option value="global">🌍 Solo Catálogo Global</option>
+                        </select>
+                    </div>
                 </div>
             <div class="table-container">
                 <table>
@@ -187,6 +199,7 @@
                             <th>Concepto</th>
                             <th>Unidad</th>
                             <th>Precio</th>
+                            <th>Cliente</th>
                             <th>Acción</th>
                         </tr>
                     </thead>
@@ -239,7 +252,51 @@
 
         </div>
     </div>
-    <script src="app.js"></script>
+
+    <div id="modalEditarPrecio" class="modal-overlay oculto">
+        <div class="modal-box">
+            <h3>Editar Precio</h3>
+            <p id="modalPrecioConcepto" class="modal-concepto"></p>
+            <div class="form-group">
+                <label>Nuevo precio ($):</label>
+                <input type="number" id="modalPrecioInput" step="0.1" min="0">
+            </div>
+            <div class="modal-acciones">
+                <button class="btn-danger" onclick="cerrarModalPrecio()">Cancelar</button>
+                <button class="btn-add" onclick="confirmarEdicionPrecio()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalDetalleHistorial" class="modal-overlay oculto">
+        <div class="modal-box modal-box-ancho">
+            <h3>Detalle del Presupuesto</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Concepto</th>
+                            <th>Unidad</th>
+                            <th>Cant.</th>
+                            <th>Precio Unit.</th>
+                            <th>Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaDetalleHistorial"></tbody>
+                </table>
+            </div>
+            <div class="modal-acciones">
+                <button class="btn-danger" onclick="cerrarModalDetalle()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="core.js"></script>
+    <script src="clientes.js"></script>
+    <script src="catalogo.js"></script>
+    <script src="presupuesto.js"></script>
 </body>
 
 </html>
