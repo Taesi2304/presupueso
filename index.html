@@ -42,6 +42,7 @@
             <div class="tabs no-print header-tabs">
                 <button class="tab-btn active" onclick="cambiarPestana('presupuesto', this)">📝 Presupuesto</button>
                 <button class="tab-btn" onclick="cambiarPestana('catalogo', this)">⚙️ Catálogo</button>
+                <button class="tab-btn" onclick="cambiarPestana('areas', this)">🏗️ Áreas</button>
                 <button class="tab-btn" onclick="cambiarPestana('clientes', this)">👥 Clientes</button>
                 <button class="tab-btn" onclick="cambiarPestana('historial', this)">📜 Historial</button>
                 <button class="btn-logout cursor-pointer" onclick="cerrarSesion()">Cerrar Sesión</button>
@@ -139,27 +140,30 @@
                 </div>
             </div>
 
-            <div id="tab-catalogo" class="tab-content no-print">
-                <h1>Administrar Catálogo</h1>
-
+            <div id="tab-areas" class="tab-content no-print">
+                <h1>Administrar Áreas (Oficios)</h1>
                 <div class="seccion-agregar">
-                    <h2>Áreas (Oficios)</h2>
+                    <h2>Nueva Área</h2>
                     <div class="grid-2">
                         <input type="text" id="areaNombre" class="input-mayusculas" placeholder="Ej. Cimentación, Herrería, Accesos...">
                         <button class="btn-add" onclick="guardarNuevaArea(this)">➕ Agregar Área</button>
                     </div>
-                    <div class="table-container espaciado-top">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Área</th>
-                                    <th>Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaAreas"></tbody>
-                        </table>
-                    </div>
                 </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Área</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaAreas"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-catalogo" class="tab-content no-print">
+                <h1>Administrar Catálogo</h1>
 
                 <div class="seccion-agregar">
                     <h2>Nuevo Concepto</h2>
@@ -317,6 +321,20 @@
             <div class="modal-acciones">
                 <button class="btn-danger" onclick="cerrarModalConcepto()">Cancelar</button>
                 <button class="btn-add" onclick="confirmarEdicionConcepto()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalEditarArea" class="modal-overlay oculto">
+        <div class="modal-box">
+            <h3>Editar Área</h3>
+            <div class="form-group">
+                <label>Nombre del área:</label>
+                <input type="text" id="modalAreaNombre" class="input-mayusculas">
+            </div>
+            <div class="modal-acciones">
+                <button class="btn-danger" onclick="cerrarModalArea()">Cancelar</button>
+                <button class="btn-add" onclick="confirmarEdicionArea()">Guardar</button>
             </div>
         </div>
     </div>

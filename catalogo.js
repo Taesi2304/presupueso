@@ -6,10 +6,14 @@
 
 // Áreas (oficios): se administran desde aquí en vez de insertarlas directo
 // en la base de datos, para que se puedan ir agregando según se necesiten.
+let areasCache = [];
+let idAreaEditando = null;
+
 async function cargarAreas() {
     const { data: areas, error } = await clienteSupabase.from('areas').select('*').order('id', { ascending: true });
     if (error) { mostrarToast("Error al cargar áreas: " + error.message, 'error'); return; }
 
+    areasCache = areas;
     mapaAreas = {};
     areas.forEach(a => mapaAreas[a.id] = a.nombre);
 
@@ -18,12 +22,18 @@ async function cargarAreas() {
     llenarMenuDesplegable('filtroAreaCatalogo', areas, 'Todas las Áreas...');
     llenarMenuDesplegable('modalConceptoArea', areas, 'Seleccione Área...');
 
-    const filas = areas.map(a => `
-        <tr>
-            <td>${escaparTexto(a.nombre)}</td>
-            <td><button class="btn-danger" onclick="borrarArea(${a.id})" title="Borrar área">🗑️</button></td>
-        </tr>`);
-    document.getElementById('tablaAreas').innerHTML = filas.join('');
+    const tablaAreas = document.getElementById('tablaAreas');
+    if (tablaAreas) {
+        const filas = areas.map(a => `
+            <tr>
+                <td>${escaparTexto(a.nombre)}</td>
+                <td>
+                    <button class="btn-edit" onclick="abrirEdicionArea(${a.id})" title="Editar área">✏️</button>
+                    <button class="btn-danger" onclick="borrarArea(${a.id})" title="Borrar área">🗑️</button>
+                </td>
+            </tr>`);
+        tablaAreas.innerHTML = filas.join('');
+    }
 }
 
 async function guardarNuevaArea(boton) {
@@ -38,6 +48,34 @@ async function guardarNuevaArea(boton) {
         mostrarToast("¡Área agregada con éxito!");
         await cargarAreas();
     });
+}
+
+function abrirEdicionArea(id) {
+    const area = areasCache.find(a => a.id === id);
+    if (!area) return;
+
+    idAreaEditando = id;
+    document.getElementById('modalAreaNombre').value = area.nombre;
+    document.getElementById('modalEditarArea').classList.remove('oculto');
+}
+
+function cerrarModalArea() {
+    idAreaEditando = null;
+    document.getElementById('modalEditarArea').classList.add('oculto');
+}
+
+async function confirmarEdicionArea() {
+    const nombre = normalizarTexto(document.getElementById('modalAreaNombre').value);
+    if (!nombre) { mostrarToast("Escribe el nombre del área.", 'error'); return; }
+
+    const { error } = await clienteSupabase.from('areas').update({ nombre }).eq('id', idAreaEditando);
+    if (error) { mostrarToast("Error al editar el área: " + error.message, 'error'); return; }
+
+    cerrarModalArea();
+    mostrarToast("Área actualizada con éxito");
+    await cargarAreas();
+    await cargarTablaCatalogo();
+    await renderizarListaConceptos();
 }
 
 async function borrarArea(id) {
