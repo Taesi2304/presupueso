@@ -49,13 +49,21 @@
             </div>
 
             <div id="tab-presupuesto" class="tab-content active">
+                <div class="encabezado-negocio">
+                    <img src="logo.png" alt="Logo" class="logo-negocio">
+                    <div>
+                        <h2 class="sin-margen">Cresencio Gallegos Vega</h2>
+                        <p class="sin-margen">Tel: 868 297 1177 (Contacto solo por WhatsApp)</p>
+                    </div>
+                </div>
                 <h1>Presupuesto de Obra</h1>
                 <div class="grid-2">
                     <div class="form-group">
                         <label>Seleccionar Cliente:</label>
-                        <select id="selClientePresupuesto" onchange="renderizarListaConceptos()">
+                        <select id="selClientePresupuesto" onchange="renderizarListaConceptos(); mostrarDireccionCliente();">
                             <option value="">Cargando clientes...</option>
                         </select>
+                        <p id="direccionClienteInfo" class="modal-concepto" style="margin-top:8px;"></p>
                     </div>
                     <div class="form-group">
                         <label>Fecha:</label>
@@ -124,19 +132,29 @@
                 </div>
 
                 <div class="opciones-cierre no-print">
-                    <label class="cursor-pointer texto-mediano">
+                    <label class="cursor-pointer texto-mediano" style="display:block;">
                         <input type="checkbox" id="checkDesgaste" checked onchange="actualizarTabla()">
                         Incluir 5% de Herramienta Menor
                     </label>
+                    <label class="cursor-pointer texto-mediano espaciado-top" style="display:block;">
+                        <input type="checkbox" id="checkIVA" onchange="actualizarTabla()">
+                        Incluir IVA (16%)
+                    </label>
+                    <div class="form-group espaciado-top" style="max-width:220px;">
+                        <label>% de Anticipo (opcional):</label>
+                        <input type="number" id="porcentajeAnticipo" placeholder="Ej. 50" min="0" max="100" step="1" oninput="actualizarTabla()">
+                    </div>
                 </div>
 
                 <div class="totales-box">
                     <p class="total-final">TOTAL: $<span id="lblTotal">0.00</span></p>
+                    <p id="lineaAnticipo" class="texto-mediano oculto"></p>
+                    <p id="lineaSaldo" class="texto-mediano oculto"></p>
                 </div>
 
                 <div class="grid-2 no-print">
                     <button class="btn-print" onclick="guardarEImprimir(this)">💾 Guardar e Imprimir</button>
-                    <button class="btn-print" style="background:#0097e6;" onclick="descargarPDF()">📄 Descargar PDF</button>
+                    <button class="btn-print" style="background:#0097e6;" onclick="descargarPDF(this)">📄 Descargar PDF</button>
                 </div>
             </div>
 
@@ -145,7 +163,7 @@
                 <div class="seccion-agregar">
                     <h2>Nueva Área</h2>
                     <div class="grid-2">
-                        <input type="text" id="areaNombre" class="input-mayusculas" placeholder="Ej. Cimentación, Herrería, Accesos...">
+                        <input type="text" id="areaNombre" class="input-mayusculas" placeholder="Escriba nueva area...">
                         <button class="btn-add" onclick="guardarNuevaArea(this)">➕ Agregar Área</button>
                     </div>
                 </div>
@@ -174,7 +192,7 @@
                         </div>
                         <div class="form-group">
                             <label>Nombre del concepto:</label>
-                            <input type="text" id="catNombre" class="input-mayusculas" placeholder="Ej. Firme de concreto">
+                            <input type="text" id="catNombre" class="input-mayusculas" placeholder="Escriba el nombre del concepto">
                         </div>
                         <div class="form-group">
                             <label>Cliente (opcional):</label>
@@ -187,13 +205,13 @@
                         <div class="form-group">
                             <label>Unidad:</label>
                             <select id="catUnidad">
-                                <option value="m2">m2</option>
-                                <option value="m3">m3</option>
-                                <option value="ml">ml</option>
-                                <option value="pza">pza</option>
-                                <option value="lote">lote</option>
-                                <option value="salida">salida</option>
-                                <option value="jornada">jornada/día</option>
+                                <option value="M2">M2</option>
+                                <option value="M3">M3</option>
+                                <option value="ML">ML</option>
+                                <option value="PZA">PZA</option>
+                                <option value="LOTE">LOTE</option>
+                                <option value="SALIDA">SALIDA</option>
+                                <option value="JORNADA">JORNADA/DÍA</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -305,13 +323,13 @@
             <div class="form-group espaciado-top">
                 <label>Unidad:</label>
                 <select id="modalConceptoUnidad">
-                    <option value="m2">m2</option>
-                    <option value="m3">m3</option>
-                    <option value="ml">ml</option>
-                    <option value="pza">pza</option>
-                    <option value="lote">lote</option>
-                    <option value="salida">salida</option>
-                    <option value="jornada">jornada/día</option>
+                    <option value="M2">M2</option>
+                    <option value="M3">M3</option>
+                    <option value="ML">ML</option>
+                    <option value="PZA">PZA</option>
+                    <option value="LOTE">LOTE</option>
+                    <option value="SALIDA">SALIDA</option>
+                    <option value="JORNADA">JORNADA/DÍA</option>
                 </select>
             </div>
             <div class="form-group espaciado-top">

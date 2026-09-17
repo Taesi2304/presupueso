@@ -409,6 +409,22 @@ th {
     z-index: 1;
 }
 
+/* --- Encabezado con datos del negocio (Presupuesto e impresión) --- */
+.encabezado-negocio {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--border);
+}
+
+.logo-negocio {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+}
+
 /* --- Toasts (reemplazan alert()) --- */
 #toastContainer {
     position: fixed;

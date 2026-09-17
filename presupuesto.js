@@ -104,9 +104,29 @@ function eliminarFila(id) {
 
 function calcularTotales() {
     const subtotal = presupuestoActual.reduce((s, item) => s + item.importe, 0);
+
     const incluyeHerramienta = document.getElementById('checkDesgaste').checked && subtotal > 0;
     const herramienta = incluyeHerramienta ? subtotal * 0.05 : 0;
-    return { subtotal, herramienta, total: subtotal + herramienta };
+
+    const baseConHerramienta = subtotal + herramienta;
+    const incluyeIVA = document.getElementById('checkIVA').checked && baseConHerramienta > 0;
+    const iva = incluyeIVA ? baseConHerramienta * 0.16 : 0;
+
+    const total = baseConHerramienta + iva;
+
+    const porcentajeAnticipo = parseFloat(document.getElementById('porcentajeAnticipo').value) || 0;
+    const anticipo = (porcentajeAnticipo > 0 && total > 0) ? total * (porcentajeAnticipo / 100) : 0;
+    const saldoPendiente = anticipo > 0 ? total - anticipo : 0;
+
+    return { subtotal, herramienta, iva, total, porcentajeAnticipo, anticipo, saldoPendiente };
+}
+
+function mostrarDireccionCliente() {
+    const idCliente = parseInt(document.getElementById('selClientePresupuesto').value);
+    const info = document.getElementById('direccionClienteInfo');
+    const cliente = (typeof clientesCache !== 'undefined') ? clientesCache.find(c => c.id === idCliente) : null;
+
+    info.textContent = (cliente && cliente.direccion) ? `📍 Dirección: ${cliente.direccion}` : '';
 }
 
 function actualizarTabla() {
@@ -123,7 +143,7 @@ function actualizarTabla() {
         </tr>
     `);
 
-    const { herramienta, total } = calcularTotales();
+    const { herramienta, iva, total, porcentajeAnticipo, anticipo, saldoPendiente } = calcularTotales();
 
     if (herramienta > 0) {
         filas.push(`
@@ -138,8 +158,33 @@ function actualizarTabla() {
         `);
     }
 
+    if (iva > 0) {
+        filas.push(`
+            <tr class="fila-herramienta">
+                <td>IVA (16%)</td>
+                <td>lote</td>
+                <td>1</td>
+                <td>$${iva.toFixed(2)}</td>
+                <td>$${iva.toFixed(2)}</td>
+                <td class="no-print">Auto</td>
+            </tr>
+        `);
+    }
+
     tbody.innerHTML = filas.join('');
     document.getElementById('lblTotal').innerText = total.toFixed(2);
+
+    const lineaAnticipo = document.getElementById('lineaAnticipo');
+    const lineaSaldo = document.getElementById('lineaSaldo');
+    if (anticipo > 0) {
+        lineaAnticipo.textContent = `Anticipo (${porcentajeAnticipo}%): $${anticipo.toFixed(2)}`;
+        lineaSaldo.textContent = `Saldo Pendiente: $${saldoPendiente.toFixed(2)}`;
+        lineaAnticipo.classList.remove('oculto');
+        lineaSaldo.classList.remove('oculto');
+    } else {
+        lineaAnticipo.classList.add('oculto');
+        lineaSaldo.classList.add('oculto');
+    }
 }
 
 // ==========================================
@@ -153,7 +198,7 @@ async function guardarEImprimir(boton) {
         return mostrarToast("Selecciona un cliente y agrega conceptos antes de guardar.", 'error');
     }
 
-    const { subtotal, herramienta, total } = calcularTotales();
+    const { subtotal, herramienta, iva, total } = calcularTotales();
 
     await conBotonCargando(boton, 'Guardando...', async () => {
         const filasDetalle = presupuestoActual.map((item, index) => ({
@@ -172,6 +217,17 @@ async function guardarEImprimir(boton) {
                 cantidad: 1,
                 precio_unitario: herramienta,
                 importe: herramienta,
+                orden: filasDetalle.length
+            });
+        }
+
+        if (iva > 0) {
+            filasDetalle.push({
+                concepto: 'IVA (16%)',
+                unidad: 'lote',
+                cantidad: 1,
+                precio_unitario: iva,
+                importe: iva,
                 orden: filasDetalle.length
             });
         }
@@ -195,42 +251,84 @@ async function guardarEImprimir(boton) {
     });
 }
 
-function descargarPDF() {
+function cargarImagenComoDataURL(url) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = reject;
+        img.src = url;
+    });
+}
+
+async function descargarPDF(boton) {
     if (presupuestoActual.length === 0) {
         mostrarToast("Agrega conceptos antes de descargar el PDF.", 'error');
         return;
     }
 
-    const select = document.getElementById('selClientePresupuesto');
-    const nombreCliente = select.options[select.selectedIndex]?.text || 'Sin cliente';
-    const fecha = document.getElementById('fechaPresupuesto').value;
-    const { herramienta, total } = calcularTotales();
+    await conBotonCargando(boton, 'Generando...', async () => {
+        const select = document.getElementById('selClientePresupuesto');
+        const nombreCliente = select.options[select.selectedIndex]?.text || 'Sin cliente';
+        const idCliente = parseInt(select.value);
+        const cliente = (typeof clientesCache !== 'undefined') ? clientesCache.find(c => c.id === idCliente) : null;
+        const fecha = document.getElementById('fechaPresupuesto').value;
+        const { herramienta, iva, total, porcentajeAnticipo, anticipo, saldoPendiente } = calcularTotales();
 
-    const doc = new jspdf.jsPDF();
-    doc.setFontSize(16);
-    doc.text('Presupuesto de Obra', 14, 15);
-    doc.setFontSize(11);
-    doc.text(`Cliente: ${nombreCliente}`, 14, 25);
-    doc.text(`Fecha: ${fecha}`, 14, 32);
+        const doc = new jspdf.jsPDF();
 
-    const filas = presupuestoActual.map(item => [
-        item.concepto, item.unidad, String(item.cantidad), `$${item.precioUnitario.toFixed(2)}`, `$${item.importe.toFixed(2)}`
-    ]);
-    if (herramienta > 0) {
-        filas.push(['Cargo por Herramienta Menor (5% de M.O.)', 'lote', '1', `$${herramienta.toFixed(2)}`, `$${herramienta.toFixed(2)}`]);
-    }
+        try {
+            const logoDataUrl = await cargarImagenComoDataURL('logo.png');
+            doc.addImage(logoDataUrl, 'PNG', 14, 10, 22, 22);
+        } catch (e) { /* si no carga el logo, seguimos sin él */ }
 
-    doc.autoTable({
-        startY: 38,
-        head: [['Concepto', 'Unidad', 'Cant.', 'Precio Unit.', 'Importe']],
-        body: filas
+        doc.setFontSize(16);
+        doc.text('Presupuesto de Obra', 42, 18);
+        doc.setFontSize(11);
+        doc.text('Cresencio Gallegos Vega', 42, 25);
+        doc.text('Tel: 868 297 1177 (Contacto solo por WhatsApp)', 42, 31);
+
+        let y = 44;
+        doc.setFontSize(11);
+        doc.text(`Cliente: ${nombreCliente}`, 14, y); y += 7;
+        if (cliente && cliente.direccion) { doc.text(`Dirección: ${cliente.direccion}`, 14, y); y += 7; }
+        doc.text(`Fecha: ${fecha}`, 14, y); y += 6;
+
+        const filas = presupuestoActual.map(item => [
+            item.concepto, item.unidad, String(item.cantidad), `$${item.precioUnitario.toFixed(2)}`, `$${item.importe.toFixed(2)}`
+        ]);
+        if (herramienta > 0) {
+            filas.push(['Cargo por Herramienta Menor (5% de M.O.)', 'lote', '1', `$${herramienta.toFixed(2)}`, `$${herramienta.toFixed(2)}`]);
+        }
+        if (iva > 0) {
+            filas.push(['IVA (16%)', 'lote', '1', `$${iva.toFixed(2)}`, `$${iva.toFixed(2)}`]);
+        }
+
+        doc.autoTable({
+            startY: y + 4,
+            head: [['Concepto', 'Unidad', 'Cant.', 'Precio Unit.', 'Importe']],
+            body: filas
+        });
+
+        let finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : y + 4) + 10;
+        doc.setFontSize(13);
+        doc.text(`TOTAL: $${total.toFixed(2)}`, 14, finalY);
+
+        if (anticipo > 0) {
+            finalY += 7;
+            doc.setFontSize(11);
+            doc.text(`Anticipo (${porcentajeAnticipo}%): $${anticipo.toFixed(2)}`, 14, finalY);
+            finalY += 6;
+            doc.text(`Saldo Pendiente: $${saldoPendiente.toFixed(2)}`, 14, finalY);
+        }
+
+        doc.save(`presupuesto_${nombreCliente}_${fecha}.pdf`);
     });
-
-    const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 38;
-    doc.setFontSize(13);
-    doc.text(`TOTAL: $${total.toFixed(2)}`, 14, finalY + 10);
-
-    doc.save(`presupuesto_${nombreCliente}_${fecha}.pdf`);
 }
 
 let offsetHistorial = 0;
