@@ -484,20 +484,56 @@ th {
         gap: 10px;
     }
 
-    /* 3. El secreto de las tablas: Scroll Lateral */
+    /* 3. Tablas -> tarjetas apiladas (nada de scroll lateral ni columnas aplastadas) */
     .table-container {
         width: 100%;
-        overflow-x: auto;
-        /* Permite deslizar la tabla con el dedo si es muy ancha */
-        -webkit-overflow-scrolling: touch;
         margin-top: 15px;
-        border: 1px solid #ddd;
     }
 
-    table {
-        min-width: 600px;
-        /* Evita que las columnas se aplasten y sean ilegibles */
-        font-size: 14px;
+    .table-container table,
+    .table-container thead,
+    .table-container tbody,
+    .table-container th,
+    .table-container td,
+    .table-container tr {
+        display: block;
+    }
+
+    .table-container thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    .table-container tr {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 12px;
+        padding: 8px;
+        background: white;
+    }
+
+    .table-container td {
+        border: none;
+        border-bottom: 1px solid #eee;
+        padding: 8px 8px 8px 45%;
+        position: relative;
+        text-align: right;
+        min-height: 24px;
+    }
+
+    .table-container td:last-child {
+        border-bottom: none;
+    }
+
+    .table-container td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 8px;
+        width: 40%;
+        text-align: left;
+        font-weight: 600;
+        color: #555;
     }
 
     /* 4. Menú de pestañas en vertical para que quepan las 4 nuevas */

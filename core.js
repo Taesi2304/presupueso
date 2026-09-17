@@ -27,7 +27,8 @@ function cambiarPestana(pestana, boton) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById('tab-' + pestana).classList.add('active');
-    boton.classList.add('active');
+    const btnActivo = boton || document.querySelector(`.tab-btn[data-pestana="${pestana}"]`);
+    if (btnActivo) btnActivo.classList.add('active');
 }
 
 // ¡Esta es la única línea que debe ejecutar el navegador al abrir la página!

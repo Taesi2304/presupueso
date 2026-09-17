@@ -16,12 +16,12 @@ async function cargarClientes() {
 
     const filas = clientes.map(c => `
         <tr>
-            <td>${escaparTexto(c.nombre)}</td>
-            <td>${escaparTexto(c.telefono) || '-'}</td>
-            <td>${escaparTexto(c.direccion) || '-'}</td>
-            <td>
-                <button class="btn-edit" onclick="abrirEdicionCliente(${c.id})" title="Editar cliente">✏️</button>
-                <button class="btn-danger" onclick="borrarCliente(${c.id})" title="Borrar cliente">🗑️</button>
+            <td data-label="Nombre">${escaparTexto(c.nombre)}</td>
+            <td data-label="Teléfono">${escaparTexto(c.telefono) || '-'}</td>
+            <td data-label="Dirección">${escaparTexto(c.direccion) || '-'}</td>
+            <td data-label="Acción">
+                <button class="btn-edit" onclick="abrirEdicionCliente(${c.id})" title="Editar cliente">✏️ Editar</button>
+                <button class="btn-danger" onclick="borrarCliente(${c.id})" title="Borrar cliente">🗑️ Borrar</button>
             </td>
         </tr>`);
     tbody.innerHTML = filas.join('');

@@ -26,10 +26,10 @@ async function cargarAreas() {
     if (tablaAreas) {
         const filas = areas.map(a => `
             <tr>
-                <td>${escaparTexto(a.nombre)}</td>
-                <td>
-                    <button class="btn-edit" onclick="abrirEdicionArea(${a.id})" title="Editar área">✏️</button>
-                    <button class="btn-danger" onclick="borrarArea(${a.id})" title="Borrar área">🗑️</button>
+                <td data-label="Área">${escaparTexto(a.nombre)}</td>
+                <td data-label="Acción">
+                    <button class="btn-edit" onclick="abrirEdicionArea(${a.id})" title="Editar área">✏️ Editar</button>
+                    <button class="btn-danger" onclick="borrarArea(${a.id})" title="Borrar área">🗑️ Borrar</button>
                 </td>
             </tr>`);
         tablaAreas.innerHTML = filas.join('');
@@ -187,17 +187,17 @@ async function cargarTablaCatalogo() {
 
         return `
             <tr>
-                <td style="font-size: 0.9em; color: #666;">${escaparTexto(nombreArea)}</td>
-                <td><strong>${escaparTexto(c.concepto)}</strong></td>
-                <td>${escaparTexto(c.unidad)}</td>
-                <td>$${c.precio_total.toFixed(2)}</td>
-                <td style="font-size: 0.85em;">${escaparTexto(etiquetaCliente)}</td>
-                <td style="display:flex; gap: 5px; flex-wrap: wrap;">
+                <td data-label="Área" style="font-size: 0.9em; color: #666;">${escaparTexto(nombreArea)}</td>
+                <td data-label="Concepto"><strong>${escaparTexto(c.concepto)}</strong></td>
+                <td data-label="Unidad">${escaparTexto(c.unidad)}</td>
+                <td data-label="Precio">$${c.precio_total.toFixed(2)}</td>
+                <td data-label="Cliente" style="font-size: 0.85em;">${escaparTexto(etiquetaCliente)}</td>
+                <td data-label="Acción" style="display:flex; gap: 5px; flex-wrap: wrap;">
                     <button class="btn-edit" style="background:#7f8fa6;" onclick="moverConcepto(${c.id}, 'arriba')" title="Mover Arriba">🔼</button>
                     <button class="btn-edit" style="background:#7f8fa6;" onclick="moverConcepto(${c.id}, 'abajo')" title="Mover Abajo">🔽</button>
-                    <button class="btn-edit" onclick="abrirEdicionConcepto(${c.id})" title="Editar concepto">✏️</button>
-                    ${c.id_cliente ? `<button class="btn-edit" style="background:#44bd32;" onclick="compartirConceptoGlobal(${c.id})" title="Compartir a Catálogo Global">📤</button>` : ''}
-                    <button class="btn-danger" onclick="borrarConcepto(${c.id})" title="Borrar concepto">🗑️</button>
+                    <button class="btn-edit" onclick="abrirEdicionConcepto(${c.id})" title="Editar concepto">✏️ Editar</button>
+                    ${c.id_cliente ? `<button class="btn-edit" style="background:#44bd32;" onclick="compartirConceptoGlobal(${c.id})" title="Compartir a Catálogo Global">📤 Compartir</button>` : ''}
+                    <button class="btn-danger" onclick="borrarConcepto(${c.id})" title="Borrar concepto">🗑️ Borrar</button>
                 </td>
             </tr>
         `;
@@ -264,8 +264,8 @@ async function confirmarEdicionConcepto() {
     const unidad = document.getElementById('modalConceptoUnidad').value;
     const precio = parseFloat(document.getElementById('modalConceptoPrecio').value);
 
-    if (!nombre || !idArea || isNaN(precio) || precio <= 0) {
-        mostrarToast("Completa nombre, área y un precio válido.", 'error');
+    if (!nombre || !idArea || isNaN(precio) || precio < 0) {
+        mostrarToast("Completa nombre, área y un precio válido (puede ser 0 si aún no lo tienes).", 'error');
         return;
     }
 

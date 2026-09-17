@@ -44,18 +44,18 @@ async function renderizarListaConceptos() {
     const filas = filtrados.map(c => {
         const nombreArea = mapaAreas[c.id_area] || '';
         const etiquetaOrigen = c.id_cliente
-            ? '<span class="badge-origen badge-cliente">📌 Cliente</span>'
-            : '<span class="badge-origen badge-global">🌍 Global</span>';
+            ? '<span class="badge-origen badge-cliente"> Cliente</span>'
+            : '<span class="badge-origen badge-global"> Conceptos Globales</span>';
         return `
             <tr data-id="${c.id}">
-                <td><input type="checkbox" class="chk-concepto"></td>
-                <td>
+                <td data-label="Seleccionar"><input type="checkbox" class="chk-concepto"></td>
+                <td data-label="Concepto">
                     <strong class="texto-concepto">${escaparTexto(c.concepto)}</strong> ${etiquetaOrigen}
                     <br><span style="font-size:0.8em; color:#888;">${escaparTexto(nombreArea)}</span>
                 </td>
-                <td class="texto-unidad">${escaparTexto(c.unidad)}</td>
-                <td><input type="number" class="input-precio-concepto" value="${c.precio_total}" step="0.1" min="0" style="width:90px"></td>
-                <td><input type="number" class="input-cantidad-concepto" value="1" min="0.1" step="0.1" style="width:70px"></td>
+                <td class="texto-unidad" data-label="Unidad">${escaparTexto(c.unidad)}</td>
+                <td data-label="Precio Unit."><input type="number" class="input-precio-concepto" value="${c.precio_total}" step="0.1" min="0" style="width:90px"></td>
+                <td data-label="Cantidad"><input type="number" class="input-cantidad-concepto" value="1" min="0.1" step="0.1" style="width:70px"></td>
             </tr>`;
     });
     tbody.innerHTML = filas.join('');
@@ -134,12 +134,12 @@ function actualizarTabla() {
 
     const filas = presupuestoActual.map(item => `
         <tr>
-            <td>${escaparTexto(item.concepto)}</td>
-            <td>${escaparTexto(item.unidad)}</td>
-            <td>${item.cantidad}</td>
-            <td>$${item.precioUnitario.toFixed(2)}</td>
-            <td>$${item.importe.toFixed(2)}</td>
-            <td class="no-print"><button class="btn-danger" onclick="eliminarFila(${item.id})">X</button></td>
+            <td data-label="Concepto">${escaparTexto(item.concepto)}</td>
+            <td data-label="Unidad">${escaparTexto(item.unidad)}</td>
+            <td data-label="Cant.">${item.cantidad}</td>
+            <td data-label="Precio Unit.">$${item.precioUnitario.toFixed(2)}</td>
+            <td data-label="Importe">$${item.importe.toFixed(2)}</td>
+            <td class="no-print" data-label="Acción"><button class="btn-danger" onclick="eliminarFila(${item.id})">🗑️ Quitar</button></td>
         </tr>
     `);
 
@@ -148,12 +148,12 @@ function actualizarTabla() {
     if (herramienta > 0) {
         filas.push(`
             <tr class="fila-herramienta">
-                <td>Cargo por Herramienta Menor (5% de M.O.)</td>
-                <td>lote</td>
-                <td>1</td>
-                <td>$${herramienta.toFixed(2)}</td>
-                <td>$${herramienta.toFixed(2)}</td>
-                <td class="no-print">Auto</td>
+                <td data-label="Concepto">Cargo por Herramienta Menor (5% de M.O.)</td>
+                <td data-label="Unidad">lote</td>
+                <td data-label="Cant.">1</td>
+                <td data-label="Precio Unit.">$${herramienta.toFixed(2)}</td>
+                <td data-label="Importe">$${herramienta.toFixed(2)}</td>
+                <td class="no-print" data-label="Acción">Auto</td>
             </tr>
         `);
     }
@@ -161,12 +161,12 @@ function actualizarTabla() {
     if (iva > 0) {
         filas.push(`
             <tr class="fila-herramienta">
-                <td>IVA (${porcentajeIVA}%)</td>
-                <td>lote</td>
-                <td>1</td>
-                <td>$${iva.toFixed(2)}</td>
-                <td>$${iva.toFixed(2)}</td>
-                <td class="no-print">Auto</td>
+                <td data-label="Concepto">IVA (${porcentajeIVA}%)</td>
+                <td data-label="Unidad">lote</td>
+                <td data-label="Cant.">1</td>
+                <td data-label="Precio Unit.">$${iva.toFixed(2)}</td>
+                <td data-label="Importe">$${iva.toFixed(2)}</td>
+                <td class="no-print" data-label="Acción">Auto</td>
             </tr>
         `);
     }
@@ -190,7 +190,7 @@ function actualizarTabla() {
 // ==========================================
 // GUARDADO E HISTORIAL
 // ==========================================
-async function guardarEImprimir(boton) {
+async function guardarPresupuesto(boton) {
     const idCliente = document.getElementById('selClientePresupuesto').value;
     const fecha = document.getElementById('fechaPresupuesto').value;
 
@@ -199,8 +199,9 @@ async function guardarEImprimir(boton) {
     }
 
     const { subtotal, herramienta, porcentajeIVA, iva, total } = calcularTotales();
+    const editando = !!idPresupuestoEditando;
 
-    await conBotonCargando(boton, 'Guardando...', async () => {
+    await conBotonCargando(boton, editando ? 'Actualizando...' : 'Guardando...', async () => {
         const filasDetalle = presupuestoActual.map((item, index) => ({
             concepto: item.concepto,
             unidad: item.unidad,
@@ -232,22 +233,36 @@ async function guardarEImprimir(boton) {
             });
         }
 
-        const { error } = await clienteSupabase.rpc('crear_presupuesto_con_detalle', {
-            p_id_cliente: idCliente,
-            p_fecha: fecha,
-            p_total: total,
-            p_subtotal: subtotal,
-            p_detalle: filasDetalle
-        });
+        const { error } = editando
+            ? await clienteSupabase.rpc('actualizar_presupuesto_con_detalle', {
+                p_id: idPresupuestoEditando,
+                p_id_cliente: idCliente,
+                p_fecha: fecha,
+                p_total: total,
+                p_subtotal: subtotal,
+                p_detalle: filasDetalle
+            })
+            : await clienteSupabase.rpc('crear_presupuesto_con_detalle', {
+                p_id_cliente: idCliente,
+                p_fecha: fecha,
+                p_total: total,
+                p_subtotal: subtotal,
+                p_detalle: filasDetalle
+            });
 
         if (error) {
-            mostrarToast("Error al guardar en el historial: " + error.message, 'error');
+            mostrarToast(`Error al ${editando ? 'actualizar' : 'guardar'} en el historial: ` + error.message, 'error');
             return;
         }
 
-        mostrarToast("¡Presupuesto guardado en el historial!");
+        mostrarToast(editando ? "¡Presupuesto actualizado con éxito!" : "¡Presupuesto guardado en el historial!");
+
+        if (editando) {
+            idPresupuestoEditando = null;
+            document.getElementById('bannerEdicionPresupuesto').classList.add('oculto');
+        }
+
         cargarHistorial();
-        window.print();
     });
 }
 
@@ -266,6 +281,45 @@ function cargarImagenComoDataURL(url) {
     });
 }
 
+async function generarPDF({ nombreCliente, direccionCliente, fecha, filas, total, lineasExtra = [], nombreArchivo }) {
+    const doc = new jspdf.jsPDF();
+
+    try {
+        const logoDataUrl = await cargarImagenComoDataURL('logo.png');
+        doc.addImage(logoDataUrl, 'PNG', 14, 10, 22, 22);
+    } catch (e) { /* si no carga el logo, seguimos sin él */ }
+
+    doc.setFontSize(16);
+    doc.text('Presupuesto de Obra', 42, 18);
+    doc.setFontSize(11);
+    doc.text('Cresencio Gallegos Vega', 42, 25);
+    doc.text('Tel: 868 297 1177 (Contacto solo por WhatsApp)', 42, 31);
+
+    let y = 44;
+    doc.setFontSize(11);
+    doc.text(`Cliente: ${nombreCliente}`, 14, y); y += 7;
+    if (direccionCliente) { doc.text(`Dirección: ${direccionCliente}`, 14, y); y += 7; }
+    doc.text(`Fecha: ${fecha}`, 14, y); y += 6;
+
+    doc.autoTable({
+        startY: y + 4,
+        head: [['Concepto', 'Unidad', 'Cant.', 'Precio Unit.', 'Importe']],
+        body: filas
+    });
+
+    let finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : y + 4) + 10;
+    doc.setFontSize(13);
+    doc.text(`TOTAL: $${total.toFixed(2)}`, 14, finalY);
+
+    doc.setFontSize(11);
+    lineasExtra.forEach(linea => {
+        finalY += 7;
+        doc.text(linea, 14, finalY);
+    });
+
+    doc.save(nombreArchivo);
+}
+
 async function descargarPDF(boton) {
     if (presupuestoActual.length === 0) {
         mostrarToast("Agrega conceptos antes de descargar el PDF.", 'error');
@@ -280,25 +334,6 @@ async function descargarPDF(boton) {
         const fecha = document.getElementById('fechaPresupuesto').value;
         const { herramienta, porcentajeIVA, iva, total, porcentajeAnticipo, anticipo, saldoPendiente } = calcularTotales();
 
-        const doc = new jspdf.jsPDF();
-
-        try {
-            const logoDataUrl = await cargarImagenComoDataURL('logo.png');
-            doc.addImage(logoDataUrl, 'PNG', 14, 10, 22, 22);
-        } catch (e) { /* si no carga el logo, seguimos sin él */ }
-
-        doc.setFontSize(16);
-        doc.text('Presupuesto de Obra', 42, 18);
-        doc.setFontSize(11);
-        doc.text('Cresencio Gallegos Vega', 42, 25);
-        doc.text('Tel: 868 297 1177 (Contacto solo por WhatsApp)', 42, 31);
-
-        let y = 44;
-        doc.setFontSize(11);
-        doc.text(`Cliente: ${nombreCliente}`, 14, y); y += 7;
-        if (cliente && cliente.direccion) { doc.text(`Dirección: ${cliente.direccion}`, 14, y); y += 7; }
-        doc.text(`Fecha: ${fecha}`, 14, y); y += 6;
-
         const filas = presupuestoActual.map(item => [
             item.concepto, item.unidad, String(item.cantidad), `$${item.precioUnitario.toFixed(2)}`, `$${item.importe.toFixed(2)}`
         ]);
@@ -309,25 +344,60 @@ async function descargarPDF(boton) {
             filas.push([`IVA (${porcentajeIVA}%)`, 'lote', '1', `$${iva.toFixed(2)}`, `$${iva.toFixed(2)}`]);
         }
 
-        doc.autoTable({
-            startY: y + 4,
-            head: [['Concepto', 'Unidad', 'Cant.', 'Precio Unit.', 'Importe']],
-            body: filas
+        const lineasExtra = anticipo > 0
+            ? [`Anticipo (${porcentajeAnticipo}%): $${anticipo.toFixed(2)}`, `Saldo Pendiente: $${saldoPendiente.toFixed(2)}`]
+            : [];
+
+        await generarPDF({
+            nombreCliente,
+            direccionCliente: cliente ? cliente.direccion : '',
+            fecha,
+            filas,
+            total,
+            lineasExtra,
+            nombreArchivo: `presupuesto_${nombreCliente}_${fecha}.pdf`
         });
+    });
+}
 
-        let finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : y + 4) + 10;
-        doc.setFontSize(13);
-        doc.text(`TOTAL: $${total.toFixed(2)}`, 14, finalY);
+async function descargarPDFHistorial(idPresupuesto, boton) {
+    await conBotonCargando(boton, '...', async () => {
+        const { data: detalle, error } = await clienteSupabase
+            .from('detalle_presupuesto')
+            .select('*')
+            .eq('id_presupuesto', idPresupuesto)
+            .order('orden', { ascending: true });
 
-        if (anticipo > 0) {
-            finalY += 7;
-            doc.setFontSize(11);
-            doc.text(`Anticipo (${porcentajeAnticipo}%): $${anticipo.toFixed(2)}`, 14, finalY);
-            finalY += 6;
-            doc.text(`Saldo Pendiente: $${saldoPendiente.toFixed(2)}`, 14, finalY);
+        if (error || !detalle || detalle.length === 0) {
+            mostrarToast("Este presupuesto no tiene detalle guardado para generar el PDF.", 'error');
+            return;
         }
 
-        doc.save(`presupuesto_${nombreCliente}_${fecha}.pdf`);
+        const presupuesto = historialCache.find(p => p.id === idPresupuesto);
+        const nombreCliente = presupuesto && presupuesto.clientes ? presupuesto.clientes.nombre : 'Sin nombre';
+        const direccionCliente = presupuesto && presupuesto.clientes ? presupuesto.clientes.direccion : '';
+        const fecha = presupuesto ? presupuesto.fecha : '';
+        const total = presupuesto ? Number(presupuesto.total) : detalle.reduce((s, d) => s + Number(d.importe), 0);
+
+        const filas = detalle.map(item => [
+            item.concepto, item.unidad, String(item.cantidad), `$${Number(item.precio_unitario).toFixed(2)}`, `$${Number(item.importe).toFixed(2)}`
+        ]);
+
+        const { data: pagos } = await clienteSupabase.from('pagos_presupuesto').select('monto').eq('id_presupuesto', idPresupuesto);
+        const cobrado = (pagos || []).reduce((s, p) => s + Number(p.monto), 0);
+        const lineasExtra = cobrado > 0
+            ? [`Cobrado: $${cobrado.toFixed(2)}`, `Pendiente: $${(total - cobrado).toFixed(2)}`]
+            : [];
+
+        await generarPDF({
+            nombreCliente,
+            direccionCliente,
+            fecha,
+            filas,
+            total,
+            lineasExtra,
+            nombreArchivo: `presupuesto_${nombreCliente}_${fecha}.pdf`
+        });
     });
 }
 
@@ -340,7 +410,7 @@ async function cargarHistorial(cargarMas = false) {
 
     const { data: historial, error } = await clienteSupabase
         .from('presupuestos')
-        .select(`id, fecha, total, clientes(nombre)`)
+        .select(`id, fecha, total, clientes(nombre, direccion)`)
         .order('fecha', { ascending: false })
         .range(offsetHistorial, offsetHistorial + TAMANO_PAGINA_HISTORIAL - 1);
 
@@ -355,12 +425,14 @@ async function cargarHistorial(cargarMas = false) {
     const tbody = document.getElementById('tablaHistorial');
     const filas = historialCache.map(p => `
         <tr>
-            <td>${escaparTexto(p.fecha)}</td>
-            <td>${escaparTexto(p.clientes ? p.clientes.nombre : 'Sin nombre')}</td>
-            <td>$${p.total.toFixed(2)}</td>
-            <td>
-                <button class="btn-edit" onclick="verDetallePresupuesto(${p.id})" title="Ver Detalle">👁️</button>
-                <button class="btn-danger" onclick="borrarPresupuesto(${p.id})" title="Borrar registro">🗑️</button>
+            <td data-label="Fecha">${escaparTexto(p.fecha)}</td>
+            <td data-label="Cliente">${escaparTexto(p.clientes ? p.clientes.nombre : 'Sin nombre')}</td>
+            <td data-label="Total">$${p.total.toFixed(2)}</td>
+            <td data-label="Acción">
+                <button class="btn-edit" onclick="verDetallePresupuesto(${p.id})" title="Ver Detalle">👁️ Ver</button>
+                <button class="btn-edit" style="background:#7f8fa6;" onclick="descargarPDFHistorial(${p.id}, this)" title="Descargar PDF">📄 PDF</button>
+                <button class="btn-edit" style="background:#e58e26;" onclick="editarPresupuestoGuardado(${p.id}, this)" title="Editar presupuesto">✏️ Editar</button>
+                <button class="btn-danger" onclick="borrarPresupuesto(${p.id})" title="Borrar registro">🗑️ Borrar</button>
             </td>
         </tr>`);
     tbody.innerHTML = filas.join('');
@@ -384,6 +456,80 @@ async function borrarPresupuesto(id) {
     }
 }
 
+async function editarPresupuestoGuardado(idPresupuesto, boton) {
+    await conBotonCargando(boton, '...', async () => {
+        const { data: presupuesto, error: errorP } = await clienteSupabase
+            .from('presupuestos')
+            .select('*, clientes(nombre)')
+            .eq('id', idPresupuesto)
+            .single();
+
+        const { data: detalle, error: errorD } = await clienteSupabase
+            .from('detalle_presupuesto')
+            .select('*')
+            .eq('id_presupuesto', idPresupuesto)
+            .order('orden', { ascending: true });
+
+        if (errorP || errorD || !presupuesto) {
+            mostrarToast("Error al cargar el presupuesto para editar.", 'error');
+            return;
+        }
+
+        // Reconstruye el carrito de trabajo, excluyendo los cargos automáticos
+        // (Herramienta Menor / IVA): se vuelven a calcular solos con los
+        // checks/porcentajes de abajo, no se cargan como filas normales.
+        presupuestoActual = (detalle || [])
+            .filter(item => !item.concepto.startsWith('Cargo por Herramienta Menor') && !item.concepto.startsWith('IVA ('))
+            .map(item => ({
+                id: siguienteIdFilaPresupuesto++,
+                concepto: item.concepto,
+                unidad: item.unidad,
+                cantidad: Number(item.cantidad),
+                precioUnitario: Number(item.precio_unitario),
+                importe: Number(item.importe)
+            }));
+
+        idPresupuestoEditando = idPresupuesto;
+
+        document.getElementById('selClientePresupuesto').value = presupuesto.id_cliente || '';
+        document.getElementById('fechaPresupuesto').value = presupuesto.fecha;
+
+        const teniaHerramienta = (detalle || []).some(item => item.concepto.startsWith('Cargo por Herramienta Menor'));
+        const filaIVA = (detalle || []).find(item => item.concepto.startsWith('IVA ('));
+        document.getElementById('checkDesgaste').checked = teniaHerramienta;
+        document.getElementById('porcentajeIVA').value = filaIVA ? (filaIVA.concepto.match(/[\d.]+/)?.[0] || '') : '';
+        document.getElementById('porcentajeAnticipo').value = '';
+
+        const nombreCliente = presupuesto.clientes ? presupuesto.clientes.nombre : 'Sin nombre';
+        document.getElementById('textoEdicionPresupuesto').textContent =
+            `✏️ Editando presupuesto de ${nombreCliente} (${presupuesto.fecha}). Corrige lo que necesites y guarda para actualizarlo.`;
+        document.getElementById('bannerEdicionPresupuesto').classList.remove('oculto');
+
+        await renderizarListaConceptos();
+        mostrarDireccionCliente();
+        actualizarTabla();
+
+        cambiarPestana('presupuesto');
+        mostrarToast("Presupuesto cargado para editar.");
+    });
+}
+
+function cancelarEdicionPresupuesto() {
+    idPresupuestoEditando = null;
+    presupuestoActual = [];
+
+    document.getElementById('bannerEdicionPresupuesto').classList.add('oculto');
+    document.getElementById('selClientePresupuesto').value = '';
+    document.getElementById('checkDesgaste').checked = true;
+    document.getElementById('porcentajeIVA').value = '';
+    document.getElementById('porcentajeAnticipo').value = '';
+
+    mostrarDireccionCliente();
+    renderizarListaConceptos();
+    actualizarTabla();
+    mostrarToast("Edición cancelada");
+}
+
 async function verDetallePresupuesto(idPresupuesto) {
     const { data: detalle, error } = await clienteSupabase
         .from('detalle_presupuesto')
@@ -400,11 +546,11 @@ async function verDetallePresupuesto(idPresupuesto) {
     } else {
         const filas = detalle.map(item => `
             <tr>
-                <td>${escaparTexto(item.concepto)}</td>
-                <td>${escaparTexto(item.unidad)}</td>
-                <td>${item.cantidad}</td>
-                <td>$${Number(item.precio_unitario).toFixed(2)}</td>
-                <td>$${Number(item.importe).toFixed(2)}</td>
+                <td data-label="Concepto">${escaparTexto(item.concepto)}</td>
+                <td data-label="Unidad">${escaparTexto(item.unidad)}</td>
+                <td data-label="Cant.">${item.cantidad}</td>
+                <td data-label="Precio Unit.">$${Number(item.precio_unitario).toFixed(2)}</td>
+                <td data-label="Importe">$${Number(item.importe).toFixed(2)}</td>
             </tr>`);
         tbody.innerHTML = filas.join('');
     }

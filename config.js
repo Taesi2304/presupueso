@@ -12,6 +12,7 @@ let presupuestoActual = [];
 let siguienteIdFilaPresupuesto = 1;
 let idConceptoEditando = null;
 let idClienteEditando = null;
+let idPresupuestoEditando = null;
 let mapaAreas = {};
 let mapaClientes = {};
 

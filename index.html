@@ -40,12 +40,12 @@
         <div id="main-app" style="display: none;">
 
             <div class="tabs no-print header-tabs">
-                <button class="tab-btn active" onclick="cambiarPestana('presupuesto', this)">📝 Presupuesto</button>
-                <button class="tab-btn" onclick="cambiarPestana('catalogo', this)">⚙️ Catálogo</button>
-                <button class="tab-btn" onclick="cambiarPestana('areas', this)">🏗️ Áreas</button>
-                <button class="tab-btn" onclick="cambiarPestana('clientes', this)">👥 Clientes</button>
-                <button class="tab-btn" onclick="cambiarPestana('historial', this)">📜 Historial</button>
-                <button class="tab-btn" onclick="cambiarPestana('pagos', this)">💰 Pagos</button>
+                <button class="tab-btn active" data-pestana="presupuesto" onclick="cambiarPestana('presupuesto', this)">📝 Presupuesto</button>
+                <button class="tab-btn" data-pestana="catalogo" onclick="cambiarPestana('catalogo', this)">⚙️ Catálogo</button>
+                <button class="tab-btn" data-pestana="areas" onclick="cambiarPestana('areas', this)">🏗️ Áreas</button>
+                <button class="tab-btn" data-pestana="clientes" onclick="cambiarPestana('clientes', this)">👥 Clientes</button>
+                <button class="tab-btn" data-pestana="historial" onclick="cambiarPestana('historial', this)">📜 Historial</button>
+                <button class="tab-btn" data-pestana="pagos" onclick="cambiarPestana('pagos', this)">💰 Pagos</button>
                 <button class="btn-logout cursor-pointer" onclick="cerrarSesion()">Cerrar Sesión</button>
             </div>
 
@@ -58,6 +58,10 @@
                     </div>
                 </div>
                 <h1>Presupuesto de Obra</h1>
+                <div id="bannerEdicionPresupuesto" class="oculto no-print" style="background:#fff3cd; border:1px solid #ffc107; padding:12px 15px; border-radius:6px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <span id="textoEdicionPresupuesto"></span>
+                    <button class="btn-danger" onclick="cancelarEdicionPresupuesto()">Cancelar Edición</button>
+                </div>
                 <div class="grid-2">
                     <div class="form-group">
                         <label>Seleccionar Cliente:</label>
@@ -85,9 +89,9 @@
                         <div class="form-group">
                             <label>Mostrar:</label>
                             <select id="filtroOrigenConceptoPresupuesto" onchange="renderizarListaConceptos()">
-                                <option value="">Todos (Global + Cliente)</option>
+                                <option value="">Todos (🌍 Global + 👥Cliente)</option>
                                 <option value="global">🌍 Solo Catálogo Global</option>
-                                <option value="cliente">📌 Solo de este Cliente</option>
+                                <option value="cliente">👥 Solo de este Cliente</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -112,8 +116,8 @@
                             </tbody>
                         </table>
                     </div>
-
-                    <button class="btn-add espaciado-top" onclick="agregarSeleccionadosAlPresupuesto()">➕ Agregar Seleccionados al Presupuesto</button>
+ <br>
+                    <button class="btn-add espaciado-top" onclick="agregarSeleccionadosAlPresupuesto()">➕ Agregar Conceptos Seleccionados al Presupuesto</button>
                 </div>
                 
                 <div class="table-container">
@@ -141,10 +145,12 @@
                         <div class="form-group">
                             <label>% de Impuesto / IVA (opcional):</label>
                             <input type="number" id="porcentajeIVA" placeholder="Ej. 16" min="0" max="100" step="0.5" oninput="actualizarTabla()">
+                            <small style="color:#888;">Déjalo vacío si este presupuesto no lleva IVA.</small>
                         </div>
                         <div class="form-group">
                             <label>% de Anticipo (opcional):</label>
                             <input type="number" id="porcentajeAnticipo" placeholder="Ej. 50" min="0" max="100" step="1" oninput="actualizarTabla()">
+                            <small style="color:#888;">Déjalo vacío si no vas a pedir anticipo.</small>
                         </div>
                     </div>
                 </div>
@@ -156,8 +162,8 @@
                 </div>
 
                 <div class="grid-2 no-print">
-                    <button class="btn-print" onclick="guardarEImprimir(this)">💾 Guardar e Imprimir</button>
-                    <button class="btn-print" style="background:#0097e6;" onclick="descargarPDF(this)">📄 Descargar PDF</button>
+                    <button class="btn-print" onclick="guardarPresupuesto(this)">💾 Guardar</button>
+                    <button class="btn-print" style="background:#0097e6;" onclick="descargarPDF(this)">📄 Descargar PDF para imprimir</button>
                 </div>
             </div>
 
@@ -165,6 +171,7 @@
                 <h1>Administrar Áreas</h1>
                 <div class="seccion-agregar">
                     <h2>Nueva Área</h2>
+                   
                     <div class="grid-2">
                         <input type="text" id="areaNombre" class="input-mayusculas" placeholder="Escriba nueva area...">
                         <button class="btn-add" onclick="guardarNuevaArea(this)">➕ Agregar Área</button>
@@ -242,7 +249,7 @@
                             <option value="global">🌍 Solo Catálogo Global</option>
                         </select>
                     </div>
-                    <button class="btn-edit" onclick="exportarCatalogoCSV()" title="Exportar catálogo a CSV">⬇️ Exportar CSV</button>
+                    <button class="btn-edit" onclick="exportarCatalogoCSV()" title="Exportar catálogo a CSV"> ⬇ Exportar CSV</button>
                 </div>
             <div class="table-container">
                 <table>

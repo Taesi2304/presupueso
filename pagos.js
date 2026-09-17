@@ -76,13 +76,13 @@ async function cargarPagosPresupuesto() {
         const saldo = totalPresupuesto - pagado;
         return `
             <tr>
-                <td>${escaparTexto(nombreCliente)}</td>
-                <td>$${totalPresupuesto.toFixed(2)}</td>
-                <td>${escaparTexto(p.fecha)}</td>
-                <td>${escaparTexto(p.concepto)}</td>
-                <td>$${Number(p.monto).toFixed(2)}</td>
-                <td>$${saldo.toFixed(2)}</td>
-                <td><button class="btn-danger" onclick="borrarPago(${p.id})" title="Borrar pago">🗑️</button></td>
+                <td data-label="Cliente">${escaparTexto(nombreCliente)}</td>
+                <td data-label="Total Presupuesto">$${totalPresupuesto.toFixed(2)}</td>
+                <td data-label="Fecha Pago">${escaparTexto(p.fecha)}</td>
+                <td data-label="Concepto">${escaparTexto(p.concepto)}</td>
+                <td data-label="Monto">$${Number(p.monto).toFixed(2)}</td>
+                <td data-label="Saldo Pendiente">$${saldo.toFixed(2)}</td>
+                <td data-label="Acción"><button class="btn-danger" onclick="borrarPago(${p.id})" title="Borrar pago">🗑️ Borrar</button></td>
             </tr>`;
     });
     tbody.innerHTML = filas.join('');
@@ -151,11 +151,11 @@ async function cargarGastos() {
     const tbody = document.getElementById('tablaGastos');
     const filas = gastos.map(g => `
         <tr>
-            <td>${escaparTexto(g.fecha)}</td>
-            <td>${escaparTexto(g.categoria)}</td>
-            <td>${escaparTexto(g.concepto)}</td>
-            <td>$${Number(g.monto).toFixed(2)}</td>
-            <td><button class="btn-danger" onclick="borrarGasto(${g.id})" title="Borrar gasto">🗑️</button></td>
+            <td data-label="Fecha">${escaparTexto(g.fecha)}</td>
+            <td data-label="Categoría">${escaparTexto(g.categoria)}</td>
+            <td data-label="Concepto">${escaparTexto(g.concepto)}</td>
+            <td data-label="Monto">$${Number(g.monto).toFixed(2)}</td>
+            <td data-label="Acción"><button class="btn-danger" onclick="borrarGasto(${g.id})" title="Borrar gasto">🗑️ Borrar</button></td>
         </tr>`);
     tbody.innerHTML = filas.join('');
 
