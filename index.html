@@ -136,13 +136,15 @@
                         <input type="checkbox" id="checkDesgaste" checked onchange="actualizarTabla()">
                         Incluir 5% de Herramienta Menor
                     </label>
-                    <label class="cursor-pointer texto-mediano espaciado-top" style="display:block;">
-                        <input type="checkbox" id="checkIVA" onchange="actualizarTabla()">
-                        Incluir IVA (16%)
-                    </label>
-                    <div class="form-group espaciado-top" style="max-width:220px;">
-                        <label>% de Anticipo (opcional):</label>
-                        <input type="number" id="porcentajeAnticipo" placeholder="Ej. 50" min="0" max="100" step="1" oninput="actualizarTabla()">
+                    <div class="grid-2 espaciado-top">
+                        <div class="form-group">
+                            <label>% de Impuesto / IVA (opcional):</label>
+                            <input type="number" id="porcentajeIVA" placeholder="Ej. 16" min="0" max="100" step="0.5" oninput="actualizarTabla()">
+                        </div>
+                        <div class="form-group">
+                            <label>% de Anticipo (opcional):</label>
+                            <input type="number" id="porcentajeAnticipo" placeholder="Ej. 50" min="0" max="100" step="1" oninput="actualizarTabla()">
+                        </div>
                     </div>
                 </div>
 

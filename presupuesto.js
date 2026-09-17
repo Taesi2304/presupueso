@@ -109,8 +109,8 @@ function calcularTotales() {
     const herramienta = incluyeHerramienta ? subtotal * 0.05 : 0;
 
     const baseConHerramienta = subtotal + herramienta;
-    const incluyeIVA = document.getElementById('checkIVA').checked && baseConHerramienta > 0;
-    const iva = incluyeIVA ? baseConHerramienta * 0.16 : 0;
+    const porcentajeIVA = parseFloat(document.getElementById('porcentajeIVA').value) || 0;
+    const iva = (porcentajeIVA > 0 && baseConHerramienta > 0) ? baseConHerramienta * (porcentajeIVA / 100) : 0;
 
     const total = baseConHerramienta + iva;
 
@@ -118,7 +118,7 @@ function calcularTotales() {
     const anticipo = (porcentajeAnticipo > 0 && total > 0) ? total * (porcentajeAnticipo / 100) : 0;
     const saldoPendiente = anticipo > 0 ? total - anticipo : 0;
 
-    return { subtotal, herramienta, iva, total, porcentajeAnticipo, anticipo, saldoPendiente };
+    return { subtotal, herramienta, porcentajeIVA, iva, total, porcentajeAnticipo, anticipo, saldoPendiente };
 }
 
 function mostrarDireccionCliente() {
@@ -143,7 +143,7 @@ function actualizarTabla() {
         </tr>
     `);
 
-    const { herramienta, iva, total, porcentajeAnticipo, anticipo, saldoPendiente } = calcularTotales();
+    const { herramienta, porcentajeIVA, iva, total, porcentajeAnticipo, anticipo, saldoPendiente } = calcularTotales();
 
     if (herramienta > 0) {
         filas.push(`
@@ -161,7 +161,7 @@ function actualizarTabla() {
     if (iva > 0) {
         filas.push(`
             <tr class="fila-herramienta">
-                <td>IVA (16%)</td>
+                <td>IVA (${porcentajeIVA}%)</td>
                 <td>lote</td>
                 <td>1</td>
                 <td>$${iva.toFixed(2)}</td>
@@ -198,7 +198,7 @@ async function guardarEImprimir(boton) {
         return mostrarToast("Selecciona un cliente y agrega conceptos antes de guardar.", 'error');
     }
 
-    const { subtotal, herramienta, iva, total } = calcularTotales();
+    const { subtotal, herramienta, porcentajeIVA, iva, total } = calcularTotales();
 
     await conBotonCargando(boton, 'Guardando...', async () => {
         const filasDetalle = presupuestoActual.map((item, index) => ({
@@ -223,7 +223,7 @@ async function guardarEImprimir(boton) {
 
         if (iva > 0) {
             filasDetalle.push({
-                concepto: 'IVA (16%)',
+                concepto: `IVA (${porcentajeIVA}%)`,
                 unidad: 'lote',
                 cantidad: 1,
                 precio_unitario: iva,
@@ -278,7 +278,7 @@ async function descargarPDF(boton) {
         const idCliente = parseInt(select.value);
         const cliente = (typeof clientesCache !== 'undefined') ? clientesCache.find(c => c.id === idCliente) : null;
         const fecha = document.getElementById('fechaPresupuesto').value;
-        const { herramienta, iva, total, porcentajeAnticipo, anticipo, saldoPendiente } = calcularTotales();
+        const { herramienta, porcentajeIVA, iva, total, porcentajeAnticipo, anticipo, saldoPendiente } = calcularTotales();
 
         const doc = new jspdf.jsPDF();
 
@@ -306,7 +306,7 @@ async function descargarPDF(boton) {
             filas.push(['Cargo por Herramienta Menor (5% de M.O.)', 'lote', '1', `$${herramienta.toFixed(2)}`, `$${herramienta.toFixed(2)}`]);
         }
         if (iva > 0) {
-            filas.push(['IVA (16%)', 'lote', '1', `$${iva.toFixed(2)}`, `$${iva.toFixed(2)}`]);
+            filas.push([`IVA (${porcentajeIVA}%)`, 'lote', '1', `$${iva.toFixed(2)}`, `$${iva.toFixed(2)}`]);
         }
 
         doc.autoTable({
