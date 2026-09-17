@@ -27,7 +27,7 @@ async function cargarClientes() {
     tbody.innerHTML = filas.join('');
 
     const opciones = clientes.map(c => `<option value="${c.id}">${escaparTexto(c.nombre)}</option>`);
-    select.innerHTML = '<option value="">-- Seleccionar Cliente --</option>' + opciones.join('');
+    select.innerHTML = '<option value="">Seleccionar Cliente Requerido</option>' + opciones.join('');
 
     llenarMenuDesplegable('catCliente', clientes, '🌍 Catálogo Global (todos)');
     llenarFiltroClienteCatalogo(clientes);

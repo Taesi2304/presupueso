@@ -346,11 +346,19 @@
                     <h2>Pagos de Presupuestos (Anticipos/Abonos)</h2>
                     <div class="grid-2">
                         <div class="form-group">
-                            <label>Presupuesto:</label>
-                            <select id="pagoPresupuesto">
+                            <label>Cliente:</label>
+                            <select id="pagoCliente" onchange="actualizarPresupuestosDelCliente()">
                                 <option value="">Seleccione...</option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label>Presupuesto (opcional):</label>
+                            <select id="pagoPresupuesto">
+                                <option value="">— Sin presupuesto todavía (anticipo general) —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-2 espaciado-top">
                         <div class="form-group">
                             <label>Fecha del pago:</label>
                             <input type="date" id="pagoFecha">
@@ -526,6 +534,22 @@
             <div class="modal-acciones">
                 <button class="btn-danger" onclick="responderConfirmacion(false)">Cancelar</button>
                 <button class="btn-add" onclick="responderConfirmacion(true)">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalVincularPago" class="modal-overlay oculto">
+        <div class="modal-box">
+            <h3>Vincular Anticipo a un Presupuesto</h3>
+            <div class="form-group">
+                <label>Presupuesto del cliente:</label>
+                <select id="modalVincularPresupuesto">
+                    <option value="">Seleccione...</option>
+                </select>
+            </div>
+            <div class="modal-acciones">
+                <button class="btn-danger" onclick="cerrarModalVincularPago()">Cancelar</button>
+                <button class="btn-add" onclick="confirmarVincularPago()">Vincular</button>
             </div>
         </div>
     </div>

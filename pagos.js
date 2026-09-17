@@ -4,37 +4,52 @@
 // ==========================================================
 let pagosCache = [];
 let gastosCache = [];
+let presupuestosParaPagoCache = [];
+let idPagoVinculando = null;
 
 async function cargarPresupuestosParaPago() {
     const { data: presupuestos, error } = await clienteSupabase
         .from('presupuestos')
-        .select('id, fecha, total, clientes(nombre)')
+        .select('id, fecha, total, id_cliente')
         .order('fecha', { ascending: false });
 
     if (error) { mostrarToast("Error al cargar presupuestos: " + error.message, 'error'); return; }
 
+    presupuestosParaPagoCache = presupuestos;
+
+    const selectCliente = document.getElementById('pagoCliente');
+    const clientes = (typeof clientesCache !== 'undefined') ? clientesCache : [];
+    const opciones = clientes.map(c => `<option value="${c.id}">${escaparTexto(c.nombre)}</option>`);
+    selectCliente.innerHTML = '<option value="">Seleccione...</option>' + opciones.join('');
+
+    actualizarPresupuestosDelCliente();
+}
+
+function actualizarPresupuestosDelCliente() {
+    const idCliente = parseInt(document.getElementById('pagoCliente').value);
     const select = document.getElementById('pagoPresupuesto');
-    const opciones = presupuestos.map(p => {
-        const nombreCliente = p.clientes ? p.clientes.nombre : 'Sin nombre';
-        return `<option value="${p.id}">${escaparTexto(nombreCliente)} - ${escaparTexto(p.fecha)} - $${Number(p.total).toFixed(2)}</option>`;
-    });
-    select.innerHTML = '<option value="">Seleccione...</option>' + opciones.join('');
+
+    const delCliente = idCliente ? presupuestosParaPagoCache.filter(p => p.id_cliente === idCliente) : [];
+    const opciones = delCliente.map(p => `<option value="${p.id}">${escaparTexto(p.fecha)} - $${Number(p.total).toFixed(2)}</option>`);
+    select.innerHTML = '<option value="">— Sin presupuesto todavía (anticipo general) —</option>' + opciones.join('');
 }
 
 async function guardarPago(boton) {
-    const idPresupuesto = parseInt(document.getElementById('pagoPresupuesto').value);
+    const idCliente = parseInt(document.getElementById('pagoCliente').value);
+    const idPresupuestoRaw = document.getElementById('pagoPresupuesto').value;
+    const idPresupuesto = idPresupuestoRaw ? parseInt(idPresupuestoRaw) : null;
     const fecha = document.getElementById('pagoFecha').value;
     const concepto = document.getElementById('pagoConcepto').value;
     const monto = parseFloat(document.getElementById('pagoMonto').value);
 
-    if (!idPresupuesto || !fecha || isNaN(monto) || monto <= 0) {
-        mostrarToast("Selecciona un presupuesto, fecha y un monto válido.", 'error');
+    if (!idCliente || !fecha || isNaN(monto) || monto <= 0) {
+        mostrarToast("Selecciona un cliente, fecha y un monto válido.", 'error');
         return;
     }
 
     await conBotonCargando(boton, 'Guardando...', async () => {
         const { error } = await clienteSupabase.from('pagos_presupuesto').insert([
-            { id_presupuesto: idPresupuesto, fecha, concepto, monto }
+            { id_cliente: idCliente, id_presupuesto: idPresupuesto, fecha, concepto, monto }
         ]);
 
         if (error) { mostrarToast("Error al guardar el pago: " + error.message, 'error'); return; }
@@ -47,7 +62,7 @@ async function guardarPago(boton) {
 
 async function cargarPagosPresupuesto() {
     let query = clienteSupabase.from('pagos_presupuesto')
-        .select('*, presupuestos(total, clientes(nombre))')
+        .select('*, clientes(nombre), presupuestos(total)')
         .order('fecha', { ascending: false });
 
     const desde = document.getElementById('fechaDesdePagos').value;
@@ -65,13 +80,31 @@ async function cargarPagosPresupuesto() {
     const { data: todosPagos } = await clienteSupabase.from('pagos_presupuesto').select('id_presupuesto, monto');
     const totalPagadoPorPresupuesto = {};
     (todosPagos || []).forEach(p => {
+        if (!p.id_presupuesto) return;
         totalPagadoPorPresupuesto[p.id_presupuesto] = (totalPagadoPorPresupuesto[p.id_presupuesto] || 0) + Number(p.monto);
     });
 
     const tbody = document.getElementById('tablaPagos');
     const filas = pagos.map(p => {
+        const nombreCliente = p.clientes ? p.clientes.nombre : 'Sin nombre';
+
+        if (!p.id_presupuesto) {
+            return `
+                <tr>
+                    <td data-label="Cliente">${escaparTexto(nombreCliente)}</td>
+                    <td data-label="Total Presupuesto">— (sin presupuesto)</td>
+                    <td data-label="Fecha Pago">${escaparTexto(p.fecha)}</td>
+                    <td data-label="Concepto">${escaparTexto(p.concepto)}</td>
+                    <td data-label="Monto">$${Number(p.monto).toFixed(2)}</td>
+                    <td data-label="Saldo Pendiente">— (sin presupuesto)</td>
+                    <td data-label="Acción">
+                        <button class="btn-edit" onclick="abrirModalVincularPago(${p.id}, ${p.id_cliente})" title="Vincular a un presupuesto">🔗 Vincular</button>
+                        <button class="btn-danger" onclick="borrarPago(${p.id})" title="Borrar pago">🗑️ Borrar</button>
+                    </td>
+                </tr>`;
+        }
+
         const totalPresupuesto = p.presupuestos ? Number(p.presupuestos.total) : 0;
-        const nombreCliente = p.presupuestos && p.presupuestos.clientes ? p.presupuestos.clientes.nombre : 'Sin nombre';
         const pagado = totalPagadoPorPresupuesto[p.id_presupuesto] || 0;
         const saldo = totalPresupuesto - pagado;
         return `
@@ -90,6 +123,38 @@ async function cargarPagosPresupuesto() {
     actualizarResumenPagos();
 }
 
+function abrirModalVincularPago(idPago, idCliente) {
+    const delCliente = presupuestosParaPagoCache.filter(p => p.id_cliente === idCliente);
+
+    if (delCliente.length === 0) {
+        mostrarToast("Este cliente todavía no tiene ningún presupuesto guardado.", 'error');
+        return;
+    }
+
+    idPagoVinculando = idPago;
+    const select = document.getElementById('modalVincularPresupuesto');
+    const opciones = delCliente.map(p => `<option value="${p.id}">${escaparTexto(p.fecha)} - $${Number(p.total).toFixed(2)}</option>`);
+    select.innerHTML = '<option value="">Seleccione...</option>' + opciones.join('');
+    document.getElementById('modalVincularPago').classList.remove('oculto');
+}
+
+function cerrarModalVincularPago() {
+    idPagoVinculando = null;
+    document.getElementById('modalVincularPago').classList.add('oculto');
+}
+
+async function confirmarVincularPago() {
+    const idPresupuesto = parseInt(document.getElementById('modalVincularPresupuesto').value);
+    if (!idPresupuesto) { mostrarToast("Selecciona un presupuesto.", 'error'); return; }
+
+    const { error } = await clienteSupabase.from('pagos_presupuesto').update({ id_presupuesto: idPresupuesto }).eq('id', idPagoVinculando);
+    if (error) { mostrarToast("Error al vincular: " + error.message, 'error'); return; }
+
+    cerrarModalVincularPago();
+    mostrarToast("¡Anticipo vinculado con éxito!");
+    await cargarPagosPresupuesto();
+}
+
 async function borrarPago(id) {
     const confirmado = await confirmarAccion("¿Borrar este pago?");
     if (!confirmado) return;
@@ -102,12 +167,13 @@ async function borrarPago(id) {
 function exportarPagosCSV() {
     if (pagosCache.length === 0) { mostrarToast("No hay pagos para exportar", 'error'); return; }
 
-    const encabezado = ['Cliente', 'Fecha Pago', 'Concepto', 'Monto'];
+    const encabezado = ['Cliente', 'Fecha Pago', 'Concepto', 'Monto', 'Presupuesto Vinculado'];
     const filas = pagosCache.map(p => [
-        p.presupuestos && p.presupuestos.clientes ? p.presupuestos.clientes.nombre : 'Sin nombre',
+        p.clientes ? p.clientes.nombre : 'Sin nombre',
         p.fecha,
         p.concepto,
-        p.monto
+        p.monto,
+        p.id_presupuesto ? 'Sí' : 'No'
     ]);
     descargarCSV('pagos.csv', encabezado, filas);
 }
