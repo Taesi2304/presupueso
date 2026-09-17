@@ -110,6 +110,19 @@ select {
     box-sizing: border-box;
 }
 
+.mostrar-password {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    cursor: pointer;
+}
+
+.mostrar-password input {
+    width: auto;
+}
+
 /* --- Botones --- */
 button {
     background-color: var(--primary);

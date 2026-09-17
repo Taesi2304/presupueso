@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,6 +24,10 @@
                 <div class="form-group espaciado-top">
                     <label>Contraseña:</label>
                     <input type="password" id="loginPassword" placeholder="******">
+                    <label class="mostrar-password">
+                        <input type="checkbox" id="mostrarPassword" onchange="alternarVisibilidadPassword()">
+                        Mostrar contraseña
+                    </label>
                 </div>
                 <button class="btn-print espaciado-top" onclick="iniciarSesion()">Entrar al Sistema</button>
                 <p id="loginError"
@@ -80,6 +83,7 @@
                             <label>Unidad:</label>
                             <select id="txtUnidad">
                                 <option value="m2">m2</option>
+                                <option value="m3">m3</option>
                                 <option value="ml">ml</option>
                                 <option value="pza">pza</option>
                                 <option value="lote">lote</option>
@@ -150,6 +154,7 @@
                             <label>Unidad:</label>
                             <select id="catUnidad">
                                 <option value="m2">m2</option>
+                                <option value="m3">m3</option>
                                 <option value="ml">ml</option>
                                 <option value="pza">pza</option>
                                 <option value="lote">lote</option>

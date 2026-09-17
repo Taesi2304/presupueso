@@ -46,6 +46,12 @@ async function iniciarSesion() {
     }
 }
 
+function alternarVisibilidadPassword() {
+    const passwordInput = document.getElementById('loginPassword');
+    const mostrarPassword = document.getElementById('mostrarPassword').checked;
+    passwordInput.type = mostrarPassword ? 'text' : 'password';
+}
+
 async function cerrarSesion() {
     await clienteSupabase.auth.signOut();
     verificarSesion();
