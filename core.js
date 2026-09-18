@@ -31,5 +31,27 @@ function cambiarPestana(pestana, boton) {
     if (btnActivo) btnActivo.classList.add('active');
 }
 
+// Evita perder un presupuesto a medio llenar si se cambia de pestaña por accidente.
+async function irAPestana(pestana, boton) {
+    const enPresupuestoConCambios = document.getElementById('tab-presupuesto').classList.contains('active')
+        && pestana !== 'presupuesto'
+        && presupuestoActual.length > 0;
+
+    if (enPresupuestoConCambios) {
+        const confirmado = await confirmarAccion("Tienes conceptos sin guardar en el presupuesto actual. Si cambias de pestaña se van a perder. ¿Quieres continuar?");
+        if (!confirmado) return;
+    }
+
+    cambiarPestana(pestana, boton);
+}
+
+// Evita cerrar o recargar la pestaña del navegador con un presupuesto sin guardar.
+window.addEventListener('beforeunload', function (evento) {
+    if (presupuestoActual.length > 0) {
+        evento.preventDefault();
+        evento.returnValue = '';
+    }
+});
+
 // ¡Esta es la única línea que debe ejecutar el navegador al abrir la página!
 window.onload = verificarSesion;

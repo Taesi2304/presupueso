@@ -110,6 +110,15 @@ async function guardarNuevoConcepto(boton) {
         return;
     }
 
+    let queryDuplicado = clienteSupabase.from('conceptos').select('id').eq('id_area', idArea).ilike('concepto', nombre);
+    queryDuplicado = idCliente ? queryDuplicado.eq('id_cliente', idCliente) : queryDuplicado.is('id_cliente', null);
+    const { data: duplicados } = await queryDuplicado;
+
+    if (duplicados && duplicados.length > 0) {
+        const confirmado = await confirmarAccion(`Ya existe un concepto llamado "${nombre}" en esta área. ¿Quieres guardarlo de todos modos?`);
+        if (!confirmado) return;
+    }
+
     await conBotonCargando(boton, 'Guardando...', async () => {
         const { data: conceptosArea } = await clienteSupabase.from('conceptos').select('orden').eq('id_area', idArea);
         let maxOrden = 0;
