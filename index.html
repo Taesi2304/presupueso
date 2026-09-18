@@ -319,29 +319,7 @@
             <div id="tab-pagos" class="tab-content no-print">
                 <h1>Dinero: lo que Entra y lo que Sale</h1>
 
-                <div class="totales-box">
-                    <p class="texto-mediano sin-margen">Dinero que ha entrado: $<span id="lblTotalCobrado">0.00</span></p>
-                    <p class="texto-mediano sin-margen">Dinero que ha salido: $<span id="lblTotalGastado">0.00</span></p>
-                    <p class="total-final">Lo que te queda: $<span id="lblBalance">0.00</span></p>
-                    <details class="espaciado-top" style="text-align:left;">
-                        <summary class="cursor-pointer texto-mediano">Ver solo de una fecha a otra (opcional)</summary>
-                        <div class="grid-3 espaciado-top">
-                            <div class="form-group">
-                                <label>Desde:</label>
-                                <input type="date" id="fechaDesdePagos">
-                            </div>
-                            <div class="form-group">
-                                <label>Hasta:</label>
-                                <input type="date" id="fechaHastaPagos">
-                            </div>
-                            <div class="form-group">
-                                <button class="btn-add" onclick="aplicarFiltroFechas()">🔎 Filtrar</button>
-                            </div>
-                        </div>
-                    </details>
-                </div>
-
-                <div class="seccion-agregar espaciado-top" style="border-left: 5px solid #44bd32;">
+                <div class="seccion-agregar" style="border-left: 5px solid #44bd32;">
                     <h2>💰 Pagos que te hacen los clientes</h2>
                     <div class="grid-2">
                         <div class="form-group">
@@ -383,6 +361,7 @@
                         </div>
                     </div>
                 </div>
+                <br><br>
                 <div class="barra-filtro">
                     <button class="btn-edit" onclick="exportarPagosCSV()" title="Exportar pagos a CSV">⬇️ Exportar CSV</button>
                 </div>
@@ -402,6 +381,7 @@
                         <tbody id="tablaPagos"></tbody>
                     </table>
                 </div>
+<br><br>
 
                 <div class="seccion-agregar espaciado-top" style="border-left: 5px solid #e84118;">
                     <h2>💸 Gastos del negocio (nómina, materiales, etc.)</h2>
@@ -418,6 +398,14 @@
                                 <option value="Herramienta">Herramienta</option>
                                 <option value="Transporte">Transporte</option>
                                 <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-2 espaciado-top">
+                        <div class="form-group">
+                            <label>¿Es de algún presupuesto en particular? (opcional):</label>
+                            <select id="gastoPresupuesto">
+                                <option value="">— Gasto general del negocio —</option>
                             </select>
                         </div>
                     </div>
@@ -446,11 +434,34 @@
                                 <th>Categoría</th>
                                 <th>Concepto</th>
                                 <th>Monto</th>
+                                <th>¿De qué presupuesto?</th>
                                 <th>Acción</th>
                             </tr>
                         </thead>
                         <tbody id="tablaGastos"></tbody>
                     </table>
+                </div>
+
+                <div class="totales-box espaciado-top">
+                    <p class="texto-mediano sin-margen">Dinero que ha entrado: $<span id="lblTotalCobrado">0.00</span></p>
+                    <p class="texto-mediano sin-margen">Dinero que ha salido: $<span id="lblTotalGastado">0.00</span></p>
+                    <p class="total-final">Lo que te queda: $<span id="lblBalance">0.00</span></p>
+                    <details class="espaciado-top" style="text-align:left;">
+                        <summary class="cursor-pointer texto-mediano">Ver solo de una fecha a otra (opcional)</summary>
+                        <div class="grid-3 espaciado-top">
+                            <div class="form-group">
+                                <label>Desde:</label>
+                                <input type="date" id="fechaDesdePagos">
+                            </div>
+                            <div class="form-group">
+                                <label>Hasta:</label>
+                                <input type="date" id="fechaHastaPagos">
+                            </div>
+                            <div class="form-group">
+                                <button class="btn-add" onclick="aplicarFiltroFechas()">🔎 Filtrar</button>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </div>
 
