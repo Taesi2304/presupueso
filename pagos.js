@@ -10,7 +10,7 @@ let idPagoVinculando = null;
 async function cargarPresupuestosParaPago() {
     const { data: presupuestos, error } = await clienteSupabase
         .from('presupuestos')
-        .select('id, fecha, total, id_cliente')
+        .select('id, fecha, total, id_cliente, clientes(nombre)')
         .order('fecha', { ascending: false });
 
     if (error) { mostrarToast("Error al cargar presupuestos: " + error.message, 'error'); return; }
@@ -23,6 +23,16 @@ async function cargarPresupuestosParaPago() {
     selectCliente.innerHTML = '<option value="">Seleccione...</option>' + opciones.join('');
 
     actualizarPresupuestosDelCliente();
+    poblarSelectGastoPresupuesto();
+}
+
+function poblarSelectGastoPresupuesto() {
+    const select = document.getElementById('gastoPresupuesto');
+    const opciones = presupuestosParaPagoCache.map(p => {
+        const nombreCliente = p.clientes ? p.clientes.nombre : 'Sin nombre';
+        return `<option value="${p.id}">${escaparTexto(nombreCliente)} - ${escaparTexto(p.fecha)} - $${Number(p.total).toFixed(2)}</option>`;
+    });
+    select.innerHTML = '<option value="">— Gasto general del negocio —</option>' + opciones.join('');
 }
 
 function actualizarPresupuestosDelCliente() {
@@ -181,6 +191,8 @@ function exportarPagosCSV() {
 async function guardarGasto(boton) {
     const fecha = document.getElementById('gastoFecha').value;
     const categoria = document.getElementById('gastoCategoria').value;
+    const idPresupuestoRaw = document.getElementById('gastoPresupuesto').value;
+    const idPresupuesto = idPresupuestoRaw ? parseInt(idPresupuestoRaw) : null;
     const concepto = document.getElementById('gastoConcepto').value.trim();
     const monto = parseFloat(document.getElementById('gastoMonto').value);
 
@@ -190,7 +202,7 @@ async function guardarGasto(boton) {
     }
 
     await conBotonCargando(boton, 'Guardando...', async () => {
-        const { error } = await clienteSupabase.from('gastos').insert([{ fecha, categoria, concepto, monto }]);
+        const { error } = await clienteSupabase.from('gastos').insert([{ fecha, categoria, id_presupuesto: idPresupuesto, concepto, monto }]);
 
         if (error) { mostrarToast("Error al guardar el gasto: " + error.message, 'error'); return; }
 
@@ -202,7 +214,7 @@ async function guardarGasto(boton) {
 }
 
 async function cargarGastos() {
-    let query = clienteSupabase.from('gastos').select('*').order('fecha', { ascending: false });
+    let query = clienteSupabase.from('gastos').select('*, presupuestos(clientes(nombre))').order('fecha', { ascending: false });
 
     const desde = document.getElementById('fechaDesdePagos').value;
     const hasta = document.getElementById('fechaHastaPagos').value;
@@ -215,14 +227,20 @@ async function cargarGastos() {
     gastosCache = gastos;
 
     const tbody = document.getElementById('tablaGastos');
-    const filas = gastos.map(g => `
+    const filas = gastos.map(g => {
+        const deQuePresupuesto = (g.id_presupuesto && g.presupuestos && g.presupuestos.clientes)
+            ? escaparTexto(g.presupuestos.clientes.nombre)
+            : 'Gasto general';
+        return `
         <tr>
             <td data-label="Fecha">${escaparTexto(g.fecha)}</td>
             <td data-label="Categoría">${escaparTexto(g.categoria)}</td>
             <td data-label="Concepto">${escaparTexto(g.concepto)}</td>
             <td data-label="Monto">$${Number(g.monto).toFixed(2)}</td>
+            <td data-label="¿De qué presupuesto?">${deQuePresupuesto}</td>
             <td data-label="Acción"><button class="btn-danger" onclick="borrarGasto(${g.id})" title="Borrar gasto">🗑️ Borrar</button></td>
-        </tr>`);
+        </tr>`;
+    });
     tbody.innerHTML = filas.join('');
 
     actualizarResumenPagos();
@@ -240,8 +258,14 @@ async function borrarGasto(id) {
 function exportarGastosCSV() {
     if (gastosCache.length === 0) { mostrarToast("No hay gastos para exportar", 'error'); return; }
 
-    const encabezado = ['Fecha', 'Categoría', 'Concepto', 'Monto'];
-    const filas = gastosCache.map(g => [g.fecha, g.categoria, g.concepto, g.monto]);
+    const encabezado = ['Fecha', 'Categoría', 'Concepto', 'Monto', 'Presupuesto'];
+    const filas = gastosCache.map(g => [
+        g.fecha,
+        g.categoria,
+        g.concepto,
+        g.monto,
+        (g.id_presupuesto && g.presupuestos && g.presupuestos.clientes) ? g.presupuestos.clientes.nombre : 'Gasto general'
+    ]);
     descargarCSV('gastos.csv', encabezado, filas);
 }
 
