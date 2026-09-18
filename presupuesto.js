@@ -386,7 +386,7 @@ async function descargarPDFHistorial(idPresupuesto, boton) {
         const { data: pagos } = await clienteSupabase.from('pagos_presupuesto').select('monto').eq('id_presupuesto', idPresupuesto);
         const cobrado = (pagos || []).reduce((s, p) => s + Number(p.monto), 0);
         const lineasExtra = cobrado > 0
-            ? [`Cobrado: $${cobrado.toFixed(2)}`, `Pendiente: $${(total - cobrado).toFixed(2)}`]
+            ? [`Cobrado: $${cobrado.toFixed(2)}`, textoSaldo(total - cobrado)]
             : [];
 
         await generarPDF({
@@ -562,7 +562,7 @@ async function verDetallePresupuesto(idPresupuesto) {
     const pendiente = totalPresupuesto - cobrado;
 
     document.getElementById('resumenPagosDetalle').textContent =
-        `Cobrado: $${cobrado.toFixed(2)} — Pendiente: $${pendiente.toFixed(2)}`;
+        `Cobrado: $${cobrado.toFixed(2)} — ${textoSaldo(pendiente)}`;
 
     document.getElementById('modalDetalleHistorial').classList.remove('oculto');
 }

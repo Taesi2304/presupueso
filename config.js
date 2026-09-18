@@ -43,6 +43,14 @@ function escaparAtributo(valor) {
 // Reemplazan alert()/confirm() nativos por componentes con el
 // estilo propio de la plataforma (ver modales en index.html).
 // ==========================================
+// Evita mostrar saldos en negativo (ej. "$-67.40"), que es confuso —
+// en vez de eso, aclara con palabras si es lo que falta o lo que se pasó.
+function textoSaldo(saldo) {
+    return saldo < 0
+        ? `Pagó de más: $${Math.abs(saldo).toFixed(2)}`
+        : `Falta por cobrar: $${saldo.toFixed(2)}`;
+}
+
 function mostrarToast(mensaje, tipo = 'exito') {
     let contenedor = document.getElementById('toastContainer');
     if (!contenedor) {

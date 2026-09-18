@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Presupuestos - Obra</title>
-    <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/913/913428.png">
+    <link rel="icon" type="image/x-icon" href="logo.png">
     <link rel="stylesheet" href="estilos.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -14,7 +14,7 @@
 
 <body>
 
-    <div class="container" id="app">
+    <div class="container" id="app" style="visibility: hidden;">
 
         <div id="login-screen" class="login-container">
             <div class="login-box">
@@ -317,33 +317,32 @@
             </div>
 
             <div id="tab-pagos" class="tab-content no-print">
-                <h1>Control de Pagos y Gastos</h1>
-
-                <div class="seccion-agregar">
-                    <h2>Filtrar por Fecha</h2>
-                    <div class="grid-3">
-                        <div class="form-group">
-                            <label>Desde:</label>
-                            <input type="date" id="fechaDesdePagos">
-                        </div>
-                        <div class="form-group">
-                            <label>Hasta:</label>
-                            <input type="date" id="fechaHastaPagos">
-                        </div>
-                        <div class="form-group">
-                            <button class="btn-add" onclick="aplicarFiltroFechas()">🔎 Filtrar</button>
-                        </div>
-                    </div>
-                </div>
+                <h1>Dinero: lo que Entra y lo que Sale</h1>
 
                 <div class="totales-box">
-                    <p class="texto-mediano sin-margen">Total Cobrado: $<span id="lblTotalCobrado">0.00</span></p>
-                    <p class="texto-mediano sin-margen">Total Gastado: $<span id="lblTotalGastado">0.00</span></p>
-                    <p class="total-final">Balance: $<span id="lblBalance">0.00</span></p>
+                    <p class="texto-mediano sin-margen">Dinero que ha entrado: $<span id="lblTotalCobrado">0.00</span></p>
+                    <p class="texto-mediano sin-margen">Dinero que ha salido: $<span id="lblTotalGastado">0.00</span></p>
+                    <p class="total-final">Lo que te queda: $<span id="lblBalance">0.00</span></p>
+                    <details class="espaciado-top" style="text-align:left;">
+                        <summary class="cursor-pointer texto-mediano">Ver solo de una fecha a otra (opcional)</summary>
+                        <div class="grid-3 espaciado-top">
+                            <div class="form-group">
+                                <label>Desde:</label>
+                                <input type="date" id="fechaDesdePagos">
+                            </div>
+                            <div class="form-group">
+                                <label>Hasta:</label>
+                                <input type="date" id="fechaHastaPagos">
+                            </div>
+                            <div class="form-group">
+                                <button class="btn-add" onclick="aplicarFiltroFechas()">🔎 Filtrar</button>
+                            </div>
+                        </div>
+                    </details>
                 </div>
 
-                <div class="seccion-agregar espaciado-top">
-                    <h2>Pagos de Presupuestos (Anticipos/Abonos)</h2>
+                <div class="seccion-agregar espaciado-top" style="border-left: 5px solid #44bd32;">
+                    <h2>💰 Pagos que te hacen los clientes</h2>
                     <div class="grid-2">
                         <div class="form-group">
                             <label>Cliente:</label>
@@ -352,10 +351,11 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Presupuesto (opcional):</label>
+                            <label>¿De qué presupuesto es? (opcional):</label>
                             <select id="pagoPresupuesto">
                                 <option value="">— Sin presupuesto todavía (anticipo general) —</option>
                             </select>
+                            <small style="color:#888;">Si no sabes a cuál presupuesto pertenece, déjalo así. Después lo puedes ligar.</small>
                         </div>
                     </div>
                     <div class="grid-2 espaciado-top">
@@ -391,11 +391,11 @@
                         <thead>
                             <tr>
                                 <th>Cliente</th>
-                                <th>Total Presupuesto</th>
+                                <th>¿De qué presupuesto?</th>
                                 <th>Fecha Pago</th>
                                 <th>Concepto</th>
                                 <th>Monto</th>
-                                <th>Saldo Pendiente</th>
+                                <th>Falta por Cobrar</th>
                                 <th>Acción</th>
                             </tr>
                         </thead>
@@ -403,8 +403,8 @@
                     </table>
                 </div>
 
-                <div class="seccion-agregar espaciado-top">
-                    <h2>Gastos Generales (Nómina, Sueldos, Materiales...)</h2>
+                <div class="seccion-agregar espaciado-top" style="border-left: 5px solid #e84118;">
+                    <h2>💸 Gastos del negocio (nómina, materiales, etc.)</h2>
                     <div class="grid-2">
                         <div class="form-group">
                             <label>Fecha:</label>

@@ -3,6 +3,8 @@
 // ==========================================
 async function verificarSesion() {
     const { data: { session } } = await clienteSupabase.auth.getSession();
+    document.getElementById('app').style.visibility = 'visible';
+
     if (session) {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';

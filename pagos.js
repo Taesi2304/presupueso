@@ -92,13 +92,13 @@ async function cargarPagosPresupuesto() {
             return `
                 <tr>
                     <td data-label="Cliente">${escaparTexto(nombreCliente)}</td>
-                    <td data-label="Total Presupuesto">— (sin presupuesto)</td>
+                    <td data-label="¿De qué presupuesto?">Todavía de ninguno</td>
                     <td data-label="Fecha Pago">${escaparTexto(p.fecha)}</td>
                     <td data-label="Concepto">${escaparTexto(p.concepto)}</td>
                     <td data-label="Monto">$${Number(p.monto).toFixed(2)}</td>
-                    <td data-label="Saldo Pendiente">— (sin presupuesto)</td>
+                    <td data-label="Falta por Cobrar">Aún no tiene presupuesto ligado</td>
                     <td data-label="Acción">
-                        <button class="btn-edit" onclick="abrirModalVincularPago(${p.id}, ${p.id_cliente})" title="Vincular a un presupuesto">🔗 Vincular</button>
+                        <button class="btn-edit" onclick="abrirModalVincularPago(${p.id}, ${p.id_cliente})" title="Vincular a un presupuesto">🔗 Ligar a un presupuesto</button>
                         <button class="btn-danger" onclick="borrarPago(${p.id})" title="Borrar pago">🗑️ Borrar</button>
                     </td>
                 </tr>`;
@@ -110,11 +110,11 @@ async function cargarPagosPresupuesto() {
         return `
             <tr>
                 <td data-label="Cliente">${escaparTexto(nombreCliente)}</td>
-                <td data-label="Total Presupuesto">$${totalPresupuesto.toFixed(2)}</td>
+                <td data-label="¿De qué presupuesto?">$${totalPresupuesto.toFixed(2)}</td>
                 <td data-label="Fecha Pago">${escaparTexto(p.fecha)}</td>
                 <td data-label="Concepto">${escaparTexto(p.concepto)}</td>
                 <td data-label="Monto">$${Number(p.monto).toFixed(2)}</td>
-                <td data-label="Saldo Pendiente">$${saldo.toFixed(2)}</td>
+                <td data-label="Falta por Cobrar">${textoSaldo(saldo)}</td>
                 <td data-label="Acción"><button class="btn-danger" onclick="borrarPago(${p.id})" title="Borrar pago">🗑️ Borrar</button></td>
             </tr>`;
     });
